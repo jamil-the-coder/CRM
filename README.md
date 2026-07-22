@@ -65,4 +65,30 @@ Email/password auth with sessions stored in the database (not stateless JWTs), s
 | `/api/auth/logout` | POST   | Ends the current session                                      |
 | `/api/auth/me`     | GET    | Returns the currently logged-in user, or 401                  |
 
-Accounts lock for 15 minutes after 5 consecutive failed login attempts. Login/signup don't yet have IP-based rate limiting — that's covered project-wide in the Phase 17 hardening pass.
+Accounts lock for 15 minutes after 5 consecutive failed login attempts. Login, signup, the public form-config lookup, and the webhook-retry trigger are all IP-rate-limited (Phase 17); security-sensitive events (signup, login success/failure/lockout, logout, API key and webhook endpoint changes) are recorded to an audit log independent of the per-record activity timeline.
+
+## Deploying
+
+The app is a standard Next.js app plus a Postgres database — it runs on any host that gives you both. Railway and Render both work well for a single-operator deploy (one web service + one managed Postgres instance, no separate Redis or job queue required — rate limiting and webhook retries are Postgres-backed).
+
+1. **Provision Postgres** and note its connection string.
+2. **Deploy the app** pointing at this repo, with the build command `npm run build` and start command `npm run start`.
+3. **Set environment variables** (see checklist below), then run migrations once against the production database:
+   ```
+   npx prisma migrate deploy
+   ```
+   (Do **not** run `npm run db:seed` against production — that's for local/demo data only.)
+4. **Point your n8n instance** at the deployed app's `/api/v1/*` webhook and REST endpoints, using a real API key created from the app's API Keys page.
+
+### Production environment variable checklist
+
+| Variable                   | Required | Notes                                                                                   |
+| --------------------------- | -------- | ---------------------------------------------------------------------------------------- |
+| `DATABASE_URL`              | Yes      | Your production Postgres connection string.                                              |
+| `SESSION_SECRET`            | Yes      | A unique, long random value — generate with the command above. Never reuse the dev value. |
+| `WEBHOOK_PROCESSOR_SECRET`  | Yes      | Bearer secret for the external scheduler that hits `/api/webhooks/process-due`.           |
+| `CALENDAR_PROVIDER`         | No       | Leave unset (defaults to `mock`) until a real Google/Outlook provider is implemented.      |
+| `ENRICHMENT_PROVIDER`       | No       | Leave unset (defaults to `noop`) until a real enrichment provider is implemented.          |
+| `NODE_ENV=production`       | Yes      | Set by most hosts automatically — enables the `secure` cookie flag.                       |
+
+You'll also need an external scheduler (cron) hitting `POST /api/webhooks/process-due` every few minutes with `Authorization: Bearer <WEBHOOK_PROCESSOR_SECRET>` to retry any failed webhook deliveries.
