@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireApiKey } from "@/lib/api-key-auth";
 import { computeDedupeKey, findDuplicateContacts } from "@/lib/dedupe";
+import { enrichContact } from "@/lib/enrichment";
 
 const createContactSchema = z.object({
   firstName: z.string().trim().min(1).max(200),
@@ -45,6 +46,10 @@ export async function POST(request: NextRequest) {
       ...parsed.data,
       dedupeKey: computeDedupeKey(parsed.data),
     },
+  });
+  await enrichContact(contact.id, {
+    email: contact.email,
+    company: contact.company,
   });
 
   return NextResponse.json(
