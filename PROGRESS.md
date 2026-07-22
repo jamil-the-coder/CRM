@@ -162,6 +162,26 @@
 - Committed as `Phase 6: embeddable form builder v1 [verified]` and pushed to `origin/main`.
 - **Next phase:** Phase 7 — Webhooks out (event envelope + HMAC signing, delivery log, retry/backoff, emits `lead.created`/`form.submitted`).
 
+### Phase 7 — Webhooks out — **DONE**
+
+- Added `WebhookEndpoint` (per-tenant URL + generated secret) and `WebhookDelivery` (one row per attempt, with status/attempts/backoff/last error) models.
+- Built `src/lib/webhooks.ts`: the signed event envelope, `emitEvent()` (fires an immediate best-effort delivery to every active endpoint on a tenant), and `processDueDeliveries()` for the backoff-retry queue.
+- Wired `emitEvent()` into every place that already logged to the Activity timeline in Phases 4/6: lead create/update/status-change, opportunity create/stage-change/closed-won/closed-lost, and form submission — using exactly the event names `EVENTS.md` (and the original `PLAN.md` draft) promised.
+- Wrote `EVENTS.md`: the finalized envelope shape, signature verification instructions, the retry schedule, and the event table.
+- Built `/api/webhooks/process-due`, protected by a bearer secret (`WEBHOOK_PROCESSOR_SECRET`) rather than a user session since it's meant to be triggered by an external scheduler, not a logged-in person — documented in `EVENTS.md` and `.env.example`.
+- Built an authenticated `/webhooks` page: add an endpoint, see its recent deliveries (event type, attempt count, status, last error) right in the CRM — this is the "delivery log visible in the CRM admin" the master prompt asks for.
+- **Verified (all passing):**
+  - `npm run test` — 40/40 (up from 26). Notably: a real local HTTP server receives a delivery and the test independently recomputes the HMAC to confirm `X-CRM-Signature` is correct (not just "some header was sent"); a delivery to a genuinely unreachable port gets a real connection failure and a scheduled backoff retry; 5 attempts in a row correctly flips a delivery to `failed`; `processDueDeliveries()` picks up and successfully redelivers a due row.
+  - `npm run lint`, `npx tsc --noEmit`, `npm run build` — clean.
+  - A real Playwright run: added a webhook endpoint through the `/webhooks` UI.
+- **Security note (proactive, not prompted by an issue this time):** a webhook endpoint's URL is tenant-supplied but the _server_ makes the outbound HTTP request to it — a classic SSRF shape if a tenant (or someone who compromises a tenant's admin account) points it at an internal address. Added `src/lib/url-safety.ts`, which blocks loopback, private (`10.x`, `172.16–31.x`, `192.168.x`), link-local (`169.254.x`, including the `169.254.169.254` cloud-metadata address every major cloud provider uses), and non-http(s) schemes at endpoint-creation time. Documented as a literal-IP check, not full DNS-rebinding protection — noted in the code as worth revisiting if this is ever exposed to fully untrusted tenants at real scale.
+- **DECISIONS:**
+  - `emitEvent()` never throws — a webhook subscriber being down must never break the CRM request that triggered the event. Failures are recorded on the delivery row and left for the retry queue.
+  - The immediate-delivery-then-queue-for-retry model means the "job table polled by a worker loop" from the Phase 0 plan is realized as an HTTP endpoint (`/api/webhooks/process-due`) for an _external_ scheduler to call, rather than a long-running in-process worker — matches the original "avoid a persistent worker process" reasoning in `PLAN.md`, and is the simplest thing that works on a serverless-style host (Vercel/Render) where a Next.js app has no long-lived process to run a loop in.
+- **NEEDS FROM OPERATOR:** to actually see retries fire in production, a scheduler needs to be pointed at `POST /api/webhooks/process-due` every 1–5 minutes with `Authorization: Bearer <WEBHOOK_PROCESSOR_SECRET>` — documented in `EVENTS.md`, not yet set up anywhere (there's no production deployment yet regardless).
+- Committed as `Phase 7: webhooks out [verified]` and pushed to `origin/main`.
+- **Next phase:** Phase 8 — Public API in (n8n-facing): per-tenant API keys, REST endpoints for leads/contacts/opportunities/activities/call bookings, OpenAPI spec.
+
 ---
 
 ## STUCK
