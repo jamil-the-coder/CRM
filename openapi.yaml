@@ -1,0 +1,321 @@
+openapi: 3.0.3
+info:
+  title: CRM API (n8n-facing)
+  version: "2026-07-22"
+  description: >
+    REST API for automation tools (n8n or anything else that speaks HTTP) to read and
+    write CRM data. Authenticate with a per-tenant API key from the CRM's API Keys page,
+    sent as `Authorization: Bearer <key>`. See EVENTS.md for the separate outbound
+    webhook contract (events the CRM sends to n8n).
+servers:
+  - url: https://your-crm-domain.example.com/api/v1
+    description: Replace with your CRM's actual deployment URL.
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: A CRM API key (starts with `crm_live_`), created on the API Keys page.
+  schemas:
+    Contact:
+      type: object
+      properties:
+        id: { type: string }
+        firstName: { type: string }
+        lastName: { type: string, nullable: true }
+        email: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        company: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+    Lead:
+      type: object
+      properties:
+        id: { type: string }
+        contactId: { type: string }
+        source: { type: string }
+        status: { type: string }
+        ownerUserId: { type: string, nullable: true }
+        score: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Opportunity:
+      type: object
+      properties:
+        id: { type: string }
+        contactId: { type: string }
+        leadId: { type: string, nullable: true }
+        name: { type: string }
+        stage: { type: string }
+        value:
+          {
+            type: string,
+            description: "Decimal amount, serialized as a string",
+          }
+        currency: { type: string }
+        probability: { type: integer }
+        expectedCloseDate: { type: string, format: date-time, nullable: true }
+        closedAt: { type: string, format: date-time, nullable: true }
+    Activity:
+      type: object
+      properties:
+        id: { type: string }
+        entityType: { type: string }
+        entityId: { type: string }
+        type: { type: string }
+        payload: { type: object, nullable: true }
+        createdAt: { type: string, format: date-time }
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+paths:
+  /contacts:
+    get:
+      summary: List contacts
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contacts:
+                    type: array
+                    items: { $ref: "#/components/schemas/Contact" }
+    post:
+      summary: Create a contact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [firstName]
+              properties:
+                firstName: { type: string }
+                lastName: { type: string }
+                email: { type: string }
+                phone: { type: string }
+                company: { type: string }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contact: { $ref: "#/components/schemas/Contact" }
+                  possibleDuplicates:
+                    type: array
+                    items: { type: string }
+        "400":
+          {
+            description: Invalid input,
+            content:
+              {
+                application/json:
+                  { schema: { $ref: "#/components/schemas/Error" } },
+              },
+          }
+  /contacts/{id}:
+    get:
+      summary: Get a contact
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: OK }
+        "404": { description: Not found }
+    patch:
+      summary: Update a contact
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName: { type: string }
+                lastName: { type: string, nullable: true }
+                email: { type: string, nullable: true }
+                phone: { type: string, nullable: true }
+                company: { type: string, nullable: true }
+      responses:
+        "200": { description: OK }
+        "404": { description: Not found }
+  /leads:
+    get:
+      summary: List leads
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  leads:
+                    type: array
+                    items: { $ref: "#/components/schemas/Lead" }
+    post:
+      summary: Create a lead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contactId]
+              properties:
+                contactId: { type: string }
+                source: { type: string }
+                status: { type: string }
+                ownerUserId: { type: string, nullable: true }
+                score: { type: integer }
+      responses:
+        "201": { description: Created }
+        "400":
+          { description: Invalid input, or contactId belongs to another tenant }
+  /leads/{id}:
+    get:
+      summary: Get a lead
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: OK }
+        "404": { description: Not found }
+    patch:
+      summary: Update a lead (e.g. change status — fires lead.status_changed)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string }
+                ownerUserId: { type: string, nullable: true }
+                score: { type: integer }
+      responses:
+        "200": { description: OK }
+        "404": { description: Not found }
+  /opportunities:
+    get:
+      summary: List opportunities
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  opportunities:
+                    type: array
+                    items: { $ref: "#/components/schemas/Opportunity" }
+    post:
+      summary: Create an opportunity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contactId, name]
+              properties:
+                contactId: { type: string }
+                leadId: { type: string, nullable: true }
+                name: { type: string }
+                stage: { type: string }
+                value: { type: number }
+                currency:
+                  { type: string, description: "3-letter ISO code, e.g. USD" }
+                probability: { type: integer }
+                ownerUserId: { type: string, nullable: true }
+                expectedCloseDate:
+                  { type: string, format: date-time, nullable: true }
+      responses:
+        "201": { description: Created }
+        "400":
+          {
+            description: Invalid input,
+            or contactId/leadId belongs to another tenant,
+          }
+  /opportunities/{id}:
+    get:
+      summary: Get an opportunity
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: OK }
+        "404": { description: Not found }
+    patch:
+      summary: >
+        Update an opportunity. Setting stage to "closed_won" or "closed_lost" sets
+        closedAt and fires the matching webhook event.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                stage: { type: string }
+                value: { type: number }
+                currency: { type: string }
+                probability: { type: integer }
+                ownerUserId: { type: string, nullable: true }
+                expectedCloseDate:
+                  { type: string, format: date-time, nullable: true }
+      responses:
+        "200": { description: OK }
+        "404": { description: Not found }
+  /activities:
+    get:
+      summary: List activities (a generic timeline entry), optionally filtered
+      parameters:
+        - {
+            name: entityType,
+            in: query,
+            schema: { type: string },
+            description: "e.g. lead, opportunity, contact",
+          }
+        - { name: entityId, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activities:
+                    type: array
+                    items: { $ref: "#/components/schemas/Activity" }
+    post:
+      summary: Record a manual activity entry (e.g. a note left by an automation)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [entityType, entityId, type]
+              properties:
+                entityType: { type: string }
+                entityId: { type: string }
+                type: { type: string }
+                payload: { type: object }
+      responses:
+        "201": { description: Created }
+        "400": { description: Invalid input }

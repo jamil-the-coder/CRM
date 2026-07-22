@@ -32,6 +32,7 @@ model Tenant {
   formSubmissions   FormSubmission[]
   webhookEndpoints  WebhookEndpoint[]
   webhookDeliveries WebhookDelivery[]
+  apiKeys           ApiKey[]
 
   @@map("tenants")
 }
@@ -221,4 +222,19 @@ model WebhookDelivery {
   @@index([tenantId])
   @@index([status, nextAttemptAt])
   @@map("webhook_deliveries")
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  tenantId   String    @map("tenant_id")
+  name       String
+  keyHash    String    @unique @map("key_hash")
+  keyPrefix  String    @map("key_prefix")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  lastUsedAt DateTime? @map("last_used_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("api_keys")
 }

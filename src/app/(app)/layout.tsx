@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/opportunities", label: "Opportunities" },
   { href: "/forms", label: "Forms" },
   { href: "/webhooks", label: "Webhooks" },
+  { href: "/api-keys", label: "API Keys" },
 ];
 
 export default async function AppLayout({

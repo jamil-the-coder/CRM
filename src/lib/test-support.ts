@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { POST as signup } from "@/app/api/auth/signup/route";
 import { SESSION_COOKIE_NAME } from "@/lib/auth";
+import { generateApiKey } from "@/lib/api-key-auth";
+import { db } from "@/lib/db";
 
 const BASE_URL = "http://localhost:3000";
 
@@ -40,6 +42,29 @@ export function apiRequest(
     headers: {
       "content-type": "application/json",
       cookie: options.cookie,
+    },
+    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+  });
+}
+
+/** Creates a real API key row for a tenant and returns the plaintext key, for testing the /api/v1 (n8n-facing) routes. */
+export async function createTestApiKey(tenantId: string) {
+  const { fullKey, keyHash, keyPrefix } = generateApiKey();
+  await db.apiKey.create({
+    data: { tenantId, name: "test key", keyHash, keyPrefix },
+  });
+  return fullKey;
+}
+
+export function apiKeyRequest(
+  path: string,
+  options: { method: string; body?: unknown; apiKey: string },
+) {
+  return new NextRequest(`${BASE_URL}${path}`, {
+    method: options.method,
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${options.apiKey}`,
     },
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
   });
