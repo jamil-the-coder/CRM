@@ -2,17 +2,39 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  getConversionFunnel,
+  getLeadSourceBreakdown,
+  getPipelineValueByStage,
+  getTimeSeries,
+} from "@/lib/reports";
+import { PipelineValueChart } from "./pipeline-value-chart";
+import { ConversionFunnelChart } from "./conversion-funnel-chart";
+import { LeadSourceChart } from "./lead-source-chart";
+import { TimeSeriesChart } from "./time-series-chart";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   const tenantId = user!.tenantId;
 
-  const [contactCount, leadCount, openOpportunityCount] = await Promise.all([
+  const [
+    contactCount,
+    leadCount,
+    openOpportunityCount,
+    pipelineValue,
+    funnel,
+    leadSources,
+    timeSeries,
+  ] = await Promise.all([
     db.contact.count({ where: { tenantId } }),
     db.lead.count({ where: { tenantId } }),
     db.opportunity.count({
       where: { tenantId, stage: { notIn: ["closed_won", "closed_lost"] } },
     }),
+    getPipelineValueByStage(tenantId),
+    getConversionFunnel(tenantId),
+    getLeadSourceBreakdown(tenantId),
+    getTimeSeries(tenantId),
   ]);
 
   const stats = [
@@ -51,13 +73,68 @@ export default async function DashboardPage() {
           </Link>
         ))}
       </div>
-      {contactCount === 0 && (
+
+      {contactCount === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-sm text-zinc-500">
             No data yet. Add your first contact, or connect an embeddable form
-            (coming in a later phase) to start capturing leads automatically.
+            to start capturing leads automatically.
           </CardContent>
         </Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-zinc-500">
+                Pipeline value by stage
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PipelineValueChart data={pipelineValue} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-zinc-500">
+                Conversion funnel
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {funnel.some((f) => f.reached > 0) ? (
+                <ConversionFunnelChart data={funnel} />
+              ) : (
+                <p className="text-sm text-zinc-500">No opportunities yet.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-zinc-500">
+                Lead source breakdown
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {leadSources.length > 0 ? (
+                <LeadSourceChart data={leadSources} />
+              ) : (
+                <p className="text-sm text-zinc-500">No leads yet.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-zinc-500">
+                Leads &amp; deals, last 14 days
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TimeSeriesChart data={timeSeries} />
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
