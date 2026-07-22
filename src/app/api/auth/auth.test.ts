@@ -171,29 +171,33 @@ describe("POST /api/auth/login and session lifecycle", () => {
     expect(wrongBody.error).toBe(noSuchBody.error);
   });
 
-  it("locks the account after repeated failed attempts, even with the correct password", { timeout: 15000 }, async () => {
-    const email = uniqueEmail("lockout");
-    const password = "a-strong-password-123";
-    const signupResponse = await signup(
-      jsonRequest("/api/auth/signup", {
-        tenantName: "Lockout Co",
-        email,
-        password,
-      }),
-    );
-    const signupBody = await signupResponse.json();
-    createdTenantIds.push(signupBody.tenant.id);
-
-    for (let i = 0; i < 5; i++) {
-      const response = await login(
-        jsonRequest("/api/auth/login", { email, password: "wrong-password" }),
+  it(
+    "locks the account after repeated failed attempts, even with the correct password",
+    { timeout: 15000 },
+    async () => {
+      const email = uniqueEmail("lockout");
+      const password = "a-strong-password-123";
+      const signupResponse = await signup(
+        jsonRequest("/api/auth/signup", {
+          tenantName: "Lockout Co",
+          email,
+          password,
+        }),
       );
-      expect(response.status).toBe(401);
-    }
+      const signupBody = await signupResponse.json();
+      createdTenantIds.push(signupBody.tenant.id);
 
-    const lockedOutResponse = await login(
-      jsonRequest("/api/auth/login", { email, password }),
-    );
-    expect(lockedOutResponse.status).toBe(423);
-  });
+      for (let i = 0; i < 5; i++) {
+        const response = await login(
+          jsonRequest("/api/auth/login", { email, password: "wrong-password" }),
+        );
+        expect(response.status).toBe(401);
+      }
+
+      const lockedOutResponse = await login(
+        jsonRequest("/api/auth/login", { email, password }),
+      );
+      expect(lockedOutResponse.status).toBe(423);
+    },
+  );
 });

@@ -308,6 +308,18 @@
 - **Not treating this as a full-session blocker** — per the master prompt ("if stuck... move to any other unblocked task"), continuing on to Phase 16 (demo data), which has no dependency on real calendar providers, and Phase 17 (hardening), rather than stalling the whole session on a credential the operator hasn't supplied.
 - **Next phase:** Phase 16 — Demo data & DEMO.md script (full demo-tenant seed + a 5-minute walkthrough script for the operator to use with prospects).
 
+### Phase 16 — Demo data & DEMO.md script — **DONE**
+
+- Rewrote `prisma/seed.ts` into a full, realistic demo-tenant seed: 12 contacts across 6 fictional companies, 9 leads at a mix of statuses/sources, 8 opportunities spanning every pipeline stage (including two closed-won deals with real `Invoice` rows and one closed-lost), a sample embeddable form with submissions, a couple of booked calls, and an example inactive webhook endpoint — no page in the app is empty on a fresh seed.
+- Switched the seed strategy from row-by-row `upsert` (fine for the single admin user) to delete-then-recreate scoped strictly to the demo tenant — the simplest way to keep a large, deeply interrelated dataset safely re-runnable without duplicate accumulation or needing a stable unique key on every single row.
+- Wrote `DEMO.md`: a 5-minute, section-by-section walkthrough (dashboard → contacts/leads/opportunities with a live Kanban drag → submitting the embeddable form live → the automation/API surface → wrap-up), with talking points and a troubleshooting section.
+- **Verified by actually following the script**, not just reading it: logged in as the seeded demo admin, confirmed the dashboard's four Phase 13 charts show real non-zero data matching the seed exactly, dragged a real opportunity card between Kanban columns, opened the seeded form's embed URL in a **separate browser page** and submitted it live (genuinely mirroring what a prospect would experience with it embedded on their own site), confirmed the resulting lead appeared, and checked the Webhooks/API Keys pages render sensibly. Also ran the seed script twice in a row to confirm idempotency, and reset the demo tenant back to its clean documented state afterward so it's ready for an actual demo.
+- **Also fixed, while here:** a flaky test timeout in Phase 3's login-lockout test — five real bcrypt (cost 12) login attempts plus DB round-trips occasionally exceeded Vitest's 5s default timeout under system load when the full 19-file suite ran in parallel. Bumped that one test to 15s; confirmed it wasn't a real regression by re-running the file in isolation, where it passed reliably every time.
+- **Verified (all passing):** `npm run test` — 63/63; `npm run lint`, `npx tsc --noEmit`, `npm run build` — clean.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 16: demo data & DEMO.md script [verified]` and pushed to `origin/main`.
+- **Next phase:** Phase 17 — Hardening pass (rate limiting on all public endpoints, audit logging, polish remaining empty/error states, finalize deployment docs). The last phase in the original plan.
+
 ---
 
 ## STUCK
