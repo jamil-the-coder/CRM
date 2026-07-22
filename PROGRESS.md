@@ -297,6 +297,17 @@
 - Committed as `Phase 14: lead dedupe matching (real fuzzy logic) + enrichment hook [verified]` and pushed to `origin/main`.
 - **Next phase:** Phase 15 — Real calendar providers (Google Calendar, Outlook) implementing the Phase 9 `CalendarProvider` interface. **Expected to be BLOCKED** — needs the operator to supply real OAuth app credentials for each provider, which don't exist yet.
 
+### Phase 15 — Real calendar providers (Google Calendar, Outlook) — **BLOCKED**
+
+- This phase genuinely cannot be built _or verified_ without real credentials — not a case of "stuck on an error," a hard external dependency. Per the master prompt's rule ("if you cannot verify... mark the phase BLOCKED... do not fake it, stub it silently, or skip ahead"), no speculative/untested OAuth implementation was written for either provider. Writing an OAuth token-exchange flow I can't actually run against a real Google/Microsoft endpoint would mean shipping code with an unverified, possibly-wrong integration — worse than clearly stating the gap.
+- **NEEDS FROM OPERATOR (exactly what's needed to unblock this):**
+  1. **Google Calendar**: a Google Cloud project with the Calendar API enabled, an OAuth 2.0 Client ID + Client Secret (Web application type), and the redirect URI this app will use (e.g. `https://<your-crm-domain>/api/auth/google/callback`) added to the authorized redirect URIs list.
+  2. **Outlook/Microsoft**: an app registration in Azure AD (Entra ID) with the Microsoft Graph `Calendars.ReadWrite` permission granted, its Application (client) ID + a client secret, and the same kind of redirect URI registered.
+  3. Confirmation that it's OK to make live outbound calls to these two real third-party services once wired up (per the master prompt's standing rule on live external calls) — this is a business/consent decision, not a technical one, so it's the operator's call, not mine to assume.
+- Until those exist, `CALENDAR_PROVIDER` stays at its default (`mock`) — the Phase 9 interface means this is purely additive whenever the credentials arrive; nothing about Phases 9–14 needs to change.
+- **Not treating this as a full-session blocker** — per the master prompt ("if stuck... move to any other unblocked task"), continuing on to Phase 16 (demo data), which has no dependency on real calendar providers, and Phase 17 (hardening), rather than stalling the whole session on a credential the operator hasn't supplied.
+- **Next phase:** Phase 16 — Demo data & DEMO.md script (full demo-tenant seed + a 5-minute walkthrough script for the operator to use with prospects).
+
 ---
 
 ## STUCK
