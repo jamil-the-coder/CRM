@@ -30,9 +30,24 @@
       "parameters": {
         "assignments": {
           "assignments": [
-            { "id": "crm-base-url", "name": "crm_base_url", "value": "https://your-crm-domain.example.com", "type": "string" },
-            { "id": "crm-api-key", "name": "crm_api_key", "value": "REPLACE_WITH_YOUR_CRM_API_KEY", "type": "string" },
-            { "id": "webhook-secret", "name": "webhook_secret", "value": "REPLACE_WITH_YOUR_WEBHOOK_SECRET", "type": "string" }
+            {
+              "id": "crm-base-url",
+              "name": "crm_base_url",
+              "value": "https://your-crm-domain.example.com",
+              "type": "string"
+            },
+            {
+              "id": "crm-api-key",
+              "name": "crm_api_key",
+              "value": "REPLACE_WITH_YOUR_CRM_API_KEY",
+              "type": "string"
+            },
+            {
+              "id": "webhook-secret",
+              "name": "webhook_secret",
+              "value": "REPLACE_WITH_YOUR_WEBHOOK_SECRET",
+              "type": "string"
+            }
           ]
         },
         "includeOtherFields": true,
@@ -85,7 +100,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $('Config').first().json.crm_api_key }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Config').first().json.crm_api_key }}"
+            }
           ]
         },
         "options": {}
@@ -113,7 +131,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $('Config').first().json.crm_api_key }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Config').first().json.crm_api_key }}"
+            }
           ]
         },
         "sendBody": true,
@@ -144,7 +165,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $('Config').first().json.crm_api_key }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Config').first().json.crm_api_key }}"
+            }
           ]
         },
         "sendBody": true,
@@ -160,15 +184,39 @@
     }
   ],
   "connections": {
-    "Lead Created Webhook": { "main": [[{ "node": "Config", "type": "main", "index": 0 }]] },
-    "Config": { "main": [[{ "node": "Compute Expected Signature", "type": "main", "index": 0 }]] },
-    "Compute Expected Signature": { "main": [[{ "node": "Verify Signature", "type": "main", "index": 0 }]] },
-    "Verify Signature": { "main": [[{ "node": "Triage Lead", "type": "main", "index": 0 }]] },
-    "Triage Lead": { "main": [[{ "node": "Get Available Slots", "type": "main", "index": 0 }]] },
-    "Get Available Slots": { "main": [[{ "node": "Pick First Slot", "type": "main", "index": 0 }]] },
-    "Pick First Slot": { "main": [[{ "node": "Book Call", "type": "main", "index": 0 }]] },
-    "Book Call": { "main": [[{ "node": "Notify Rep (placeholder)", "type": "main", "index": 0 }]] },
-    "Notify Rep (placeholder)": { "main": [[{ "node": "Write Back Triage Outcome", "type": "main", "index": 0 }]] }
+    "Lead Created Webhook": {
+      "main": [[{ "node": "Config", "type": "main", "index": 0 }]]
+    },
+    "Config": {
+      "main": [
+        [{ "node": "Compute Expected Signature", "type": "main", "index": 0 }]
+      ]
+    },
+    "Compute Expected Signature": {
+      "main": [[{ "node": "Verify Signature", "type": "main", "index": 0 }]]
+    },
+    "Verify Signature": {
+      "main": [[{ "node": "Triage Lead", "type": "main", "index": 0 }]]
+    },
+    "Triage Lead": {
+      "main": [[{ "node": "Get Available Slots", "type": "main", "index": 0 }]]
+    },
+    "Get Available Slots": {
+      "main": [[{ "node": "Pick First Slot", "type": "main", "index": 0 }]]
+    },
+    "Pick First Slot": {
+      "main": [[{ "node": "Book Call", "type": "main", "index": 0 }]]
+    },
+    "Book Call": {
+      "main": [
+        [{ "node": "Notify Rep (placeholder)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Notify Rep (placeholder)": {
+      "main": [
+        [{ "node": "Write Back Triage Outcome", "type": "main", "index": 0 }]
+      ]
+    }
   },
   "active": false,
   "settings": { "executionOrder": "v1" },

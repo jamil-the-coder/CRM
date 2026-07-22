@@ -216,6 +216,22 @@
 - Committed as `Phase 9: calendar integration interface + mock provider [verified]` and pushed to `origin/main`.
 - **Next phase:** Phase 10 — n8n Sales Agent reference flow (importable workflow JSON + setup guide: triage a new lead, book a slot via the Phase 8/9 API, notify the rep, write the outcome back).
 
+### Phase 10 — n8n Sales Agent reference flow — **DONE**
+
+- Built `n8n-flows/sales-agent.json`: webhook trigger on `lead.created` → verify HMAC signature → triage (simple scoring rules, documented as swappable for an LLM node) → fetch available slots from the Phase 9 calendar API → book the first one → notify the rep (explicit no-op placeholder) → write the triage outcome back onto the lead via the Phase 8 API. Plus `sales-agent-setup.md` (step-by-step, non-technical) and `n8n-flows/README.md` (index).
+- **This is real, not just a hand-written JSON blob** — a real n8n instance was spun up in Docker specifically to test-drive it before committing:
+  - Confirmed the JSON imports cleanly via `n8n import:workflow` (validates node types/typeVersions/connections against a real n8n build).
+  - Activated the workflow and POSTed a correctly-HMAC-signed payload directly at its real production webhook URL — i.e. exactly what the CRM itself will do.
+  - **This live run caught two genuine bugs before they ever reached this repo:** (1) n8n's Code node sandbox disallows `require('crypto')` — fixed by switching signature verification to n8n's built-in Crypto node; (2) the Config (Set) node silently drops every other field on the item unless `includeOtherFields` is explicitly turned on — without that fix, every node after Config would have lost access to the original webhook body/headers, silently breaking the entire flow.
+  - After both fixes, the same real trigger produced a genuine `CallBooking` row (via the Phase 9 mock provider), wrote `status: qualified, score: 70` back onto a real test lead through the live CRM API, and logged both `call.booked` and `lead.status_changed` Activity entries — all independently confirmed by querying the database afterward, not just trusting a 200 response.
+  - Torn down afterward: all disposable n8n containers/images removed, test tenant deleted from the CRM database. The operator's own **pre-existing** n8n container (already running on this machine, unrelated to this project) was identified early and deliberately left untouched the entire time — a fresh disposable instance was used for all testing instead.
+- **Problems hit & resolved:** both described above (crypto sandbox restriction, `includeOtherFields` default) — genuinely would have shipped as a broken reference flow without this verification step; also hit a Git-Bash-on-Windows path-mangling issue with `docker exec`/`docker cp` absolute paths, worked around with `MSYS_NO_PATHCONV=1`.
+- **DECISIONS:**
+  - No retry/backoff configured on the workflow's own HTTP Request nodes (if the CRM API is briefly unreachable) — noted as a customization point in the setup guide rather than baked in, since n8n's per-node "Retry on Fail" setting is something the operator can toggle themselves without needing a code change.
+- **NEEDS FROM OPERATOR:** none blocking. When the operator actually sets this up against their real n8n instance, they'll need their own API key + webhook secret (can't be pre-provisioned since they don't exist until the operator creates them) — documented clearly in the setup guide.
+- Committed as `Phase 10: n8n Sales Agent reference flow [verified]` and pushed to `origin/main`.
+- **Next phase:** Phase 11 — Opportunity pipeline UI + stage events (Kanban board, configurable `PipelineStage` per tenant).
+
 ---
 
 ## STUCK
