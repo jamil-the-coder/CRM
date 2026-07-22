@@ -142,6 +142,26 @@
 - Committed as `Phase 5: minimal UI shell [verified]` and pushed to `origin/main`.
 - **Next phase:** Phase 6 — Embeddable form builder v1 (form definition, embed snippet, public submission endpoint with honeypot + rate limiting, creates a lead).
 
+### Phase 6 — Embeddable form builder v1 — **DONE**
+
+- Added `Form` (name, fields config, unique `embedKey`) and `FormSubmission` (payload, status, linked lead, IP) models.
+- Built the authenticated form management API (create/list/read, tenant-scoped) and an authenticated `/forms` page: create a form by name, see a ready-to-paste `<iframe>` embed snippet and a running submission count per form.
+- Built the **public** side: `GET /api/public/forms/[embedKey]` serves just the field config (no tenant data leaked), and a public `/embed/[embedKey]` page renders the form standalone — designed to be dropped into any external site via the iframe snippet.
+- Built `POST /api/public/forms/[embedKey]/submit`: validates input, creates a `Contact` + `Lead` (source `form:<form name>`) tagged onto the right tenant, logs `lead.created` and `form.submitted` to the Activity timeline (same vocabulary the Phase 7 webhook contract will use), and records every attempt (accepted/rejected) in `FormSubmission`.
+- Spam protection: an invisible honeypot field (`website`) that only automated fillers populate — tripping it returns a normal-looking success response (so the bot doesn't learn it was caught) but creates nothing real, just a `rejected_honeypot` record. A per-IP, per-form rolling-window cap (5 submissions / 10 minutes) returns 429 beyond that, logged as `rejected_rate_limited`.
+- **Verified (all passing):**
+  - `npm run test` — 26/26 (up from 20), covering form CRUD, public config exposure, a real submission creating a contact+lead, the honeypot path creating zero leads, the rate limit tripping exactly on the 6th attempt, and a 404 for an unknown embed key.
+  - `npm run lint`, `npx tsc --noEmit`, `npm run build` — all clean.
+  - A real Playwright browser run: signed up, created a form in the `/forms` UI, opened its embed URL in a **separate browser page** (to genuinely simulate an external site loading it in an iframe, not just navigating within the app), submitted it, then confirmed back in the CRM that the lead appeared under Leads and the submission counter on the Forms page incremented.
+- **Problems hit & resolved:**
+  - ESLint's `react-hooks/set-state-in-effect` rule flagged computing the embed URL's origin via `useEffect` + `setState` in a Client Component (a common but discouraged pattern). Fixed properly rather than suppressing the rule: moved the origin lookup to the Server Component (`headers()` in `/forms/page.tsx`) and passed it down as a plain prop, so `EmbedSnippet` needs no client-side state or effect at all.
+- **DECISIONS:**
+  - Forms render a fixed field set (name/email/phone/company, matching `Contact`) rather than a fully freeform drag-and-drop builder — matches "v1" scope in `PLAN.md`; the `fields` JSON column already supports per-field required/label config today, so a real builder UI can be layered on later without a schema change.
+  - Rate limiting here is deliberately narrow (per-IP-per-form, this one endpoint) — broad rate limiting across _all_ public endpoints is Phase 17's job, not duplicated here.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 6: embeddable form builder v1 [verified]` and pushed to `origin/main`.
+- **Next phase:** Phase 7 — Webhooks out (event envelope + HMAC signing, delivery log, retry/backoff, emits `lead.created`/`form.submitted`).
+
 ---
 
 ## STUCK
