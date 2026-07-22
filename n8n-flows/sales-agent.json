@@ -1,0 +1,176 @@
+{
+  "id": "crm-sales-agent",
+  "name": "CRM Sales Agent",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "sticky-config",
+      "name": "Setup notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [0, -80],
+      "notes": "",
+      "content": "## CRM Sales Agent\n\nBefore activating:\n1. Open the **Config** node below and fill in your CRM base URL, an API key (from the CRM's API Keys page), and the webhook secret (from the CRM's Webhooks page).\n2. In the CRM, add this workflow's Production Webhook URL (shown on the **Lead Created Webhook** node) as a Webhook Endpoint.\n3. Replace the **Notify Rep (placeholder)** node with a real Slack/Email node — it's a no-op here on purpose.\n"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sales-agent-lead-created",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Lead Created Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "webhookId": "sales-agent-lead-created"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "crm-base-url", "name": "crm_base_url", "value": "https://your-crm-domain.example.com", "type": "string" },
+            { "id": "crm-api-key", "name": "crm_api_key", "value": "REPLACE_WITH_YOUR_CRM_API_KEY", "type": "string" },
+            { "id": "webhook-secret", "name": "webhook_secret", "value": "REPLACE_WITH_YOUR_WEBHOOK_SECRET", "type": "string" }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "config-node",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{ JSON.stringify($json.body) }}",
+        "secret": "={{ $('Config').first().json.webhook_secret }}",
+        "dataPropertyName": "expectedSignature"
+      },
+      "id": "compute-signature",
+      "name": "Compute Expected Signature",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Uses n8n's built-in Crypto node above rather than Node's crypto module\n// directly — n8n's Code node sandbox disallows 'require(\"crypto\")'.\nconst received = $json.headers['x-crm-signature'] || '';\nconst expected = 'sha256=' + $json.expectedSignature;\n\nif (received !== expected) {\n  throw new Error('Webhook signature verification failed — check that the webhook secret in the Config node matches the CRM Webhooks page.');\n}\n\nreturn $input.all();"
+      },
+      "id": "verify-signature",
+      "name": "Verify Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Simple scoring rules — swap this node for an LLM step (e.g. an OpenAI node)\n// if you want the operator to configure AI-based triage instead.\nconst event = $input.first().json.body;\nconst lead = event.data.lead;\nconst email = (lead.contact && lead.contact.email) || '';\n\nlet score = 50;\nif (event.event_type === 'form.submitted') score += 10;\nif (email && !/@(gmail|yahoo|hotmail|outlook)\\./i.test(email)) score += 20; // business email\n\nconst status = score >= 70 ? 'qualified' : 'new';\n\nreturn [{ json: { ...event, leadId: lead.id, triageScore: score, triageStatus: status } }];"
+      },
+      "id": "triage-lead",
+      "name": "Triage Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Config').first().json.crm_base_url }}/api/v1/calendar/slots?durationMinutes=30",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $('Config').first().json.crm_api_key }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-slots",
+      "name": "Get Available Slots",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const slots = $json.slots;\nif (!slots || slots.length === 0) {\n  throw new Error('No available calendar slots returned by the CRM.');\n}\nconst first = slots[0];\nconst triage = $('Triage Lead').first().json;\nreturn [{ json: { ...triage, slot: first } }];"
+      },
+      "id": "pick-slot",
+      "name": "Pick First Slot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.crm_base_url }}/api/v1/call-bookings",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $('Config').first().json.crm_api_key }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ leadId: $json.leadId, startsAt: $json.slot.startsAt, endsAt: $json.slot.endsAt, attendeeEmail: $json.data.lead.contact.email }) }}",
+        "options": {}
+      },
+      "id": "book-call",
+      "name": "Book Call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {},
+      "id": "notify-rep",
+      "name": "Notify Rep (placeholder)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2000, 300],
+      "notesInFlow": true,
+      "notes": "Replace with a real Slack or Email node to notify the assigned rep that a call was booked."
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $('Config').first().json.crm_base_url }}/api/v1/leads/{{ $('Triage Lead').first().json.leadId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $('Config').first().json.crm_api_key }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: $('Triage Lead').first().json.triageStatus, score: $('Triage Lead').first().json.triageScore }) }}",
+        "options": {}
+      },
+      "id": "write-back-outcome",
+      "name": "Write Back Triage Outcome",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2220, 300]
+    }
+  ],
+  "connections": {
+    "Lead Created Webhook": { "main": [[{ "node": "Config", "type": "main", "index": 0 }]] },
+    "Config": { "main": [[{ "node": "Compute Expected Signature", "type": "main", "index": 0 }]] },
+    "Compute Expected Signature": { "main": [[{ "node": "Verify Signature", "type": "main", "index": 0 }]] },
+    "Verify Signature": { "main": [[{ "node": "Triage Lead", "type": "main", "index": 0 }]] },
+    "Triage Lead": { "main": [[{ "node": "Get Available Slots", "type": "main", "index": 0 }]] },
+    "Get Available Slots": { "main": [[{ "node": "Pick First Slot", "type": "main", "index": 0 }]] },
+    "Pick First Slot": { "main": [[{ "node": "Book Call", "type": "main", "index": 0 }]] },
+    "Book Call": { "main": [[{ "node": "Notify Rep (placeholder)", "type": "main", "index": 0 }]] },
+    "Notify Rep (placeholder)": { "main": [[{ "node": "Write Back Triage Outcome", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}
