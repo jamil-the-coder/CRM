@@ -264,6 +264,22 @@
 - Committed as `Phase 12: n8n Finance Agent reference flow [verified]` and pushed to `origin/main`.
 - **Next phase:** Phase 13 — Dashboard & reporting (pipeline value by stage, conversion rates, lead-source breakdown, time series).
 
+### Phase 13 — Dashboard & reporting — **DONE**
+
+- Built four report functions (`src/lib/reports.ts`), each a pure function against the database so the numbers are independently testable: pipeline value by current stage, a stage-to-stage conversion funnel, lead-source breakdown, and a 14-day leads-created/deals-closed time series.
+- The conversion funnel is built from the Activity log's `opportunity.created`/`opportunity.stage_changed` entries — "reached stage X" means the opportunity was ever created at or transitioned to X, not just where it currently sits, so a deal that passed through "qualified" on its way to closed-won still counts toward qualified's conversion rate.
+- Wired all four into the Dashboard as charts, loading the `dataviz` skill first and following its method: sequential single-hue (blue) for magnitude bars, a fixed categorical hue order with a legend for the lead-source breakdown, native `title`-attribute tooltips (a deliberate simplification vs. a full JS hover layer, given no charting library was introduced).
+- **Verified exactly as the phase asked: "seed known data, assert the computed numbers match by hand."** A test creates three opportunities with a specific, known stage-transition history (A: new→qualified, stays; B: new→qualified→closed_won; C: stays at new) plus five leads split across two sources, then asserts every report's output against hand-calculated expected numbers — not just "did it return something non-empty."
+- **That exercise caught two real bugs before they shipped:**
+  1. `getTimeSeries` mixed local-time day boundaries (`setHours(0,0,0,0)`) with UTC-based date-key comparisons (`toISOString().slice(0,10)`) — on a machine where local time and UTC disagree on which day it currently is, "today" could silently fall outside the day the loop actually generated. Fixed by computing everything — the start boundary and every day-key — in UTC.
+  2. The time-series bar chart used `items-end` on a flex row whose day-column children had no explicit height; percentage-height bars have no resolved reference without a sized parent, so every bar silently rendered at 0px. The automated tests couldn't have caught this (the underlying numbers were correct) — it only turned up because a real Playwright screenshot was taken and looked at. Fixed by giving each day-column an explicit height so the percentage children resolve correctly.
+- **Verified (all passing):** `npm run test` — 57/57 (up from 56); `npm run lint`, `npx tsc --noEmit`, `npm run build` — clean; a real Playwright run confirming all four charts render with actual visible data after both fixes (re-screenshotted to confirm the bar-chart fix specifically).
+- **DECISIONS:**
+  - Tooltips are native `title` attributes rather than a custom JS hover layer — the `dataviz` skill's fuller interaction spec (crosshair, custom tooltip component) was judged more investment than this phase's scope warranted without a charting library already in place; revisit if the operator wants richer interactivity.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 13: dashboard & reporting [verified]` and pushed to `origin/main`.
+- **Next phase:** Phase 14 — Lead dedupe matching (real fuzzy/trigram matching on email/phone/company, replacing the Phase 4 exact-match stub) + enrichment-hook interface.
+
 ---
 
 ## STUCK
