@@ -44,3 +44,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# local, machine-specific Claude Code permission overrides — not shared project config
+.claude/settings.local.json
+
+# vendor-supplied AI-assistant reference docs (installed by `prisma init`/upgrades) —
+# regenerable documentation, not project source; skip committing 3x duplicate copies
+.agents/
+.claude/skills/
+.windsurf/
+skills-lock.json
