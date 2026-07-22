@@ -1,0 +1,164 @@
+{
+  "id": "crm-finance-agent",
+  "name": "CRM Finance Agent",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "sticky-config",
+      "name": "Setup notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [0, -80],
+      "notes": "",
+      "content": "## CRM Finance Agent\n\nBefore activating:\n1. Open the **Config** node below and fill in your CRM base URL, an API key (from the CRM's API Keys page), and the webhook secret (from the CRM's Webhooks page).\n2. In the CRM, add this workflow's Production Webhook URL (shown on the **Opportunity Closed Won Webhook** node) as a Webhook Endpoint.\n3. Replace the **Accounting Tool (placeholder)** node with a real Xero/QuickBooks/Stripe node — it's a no-op here on purpose.\n\nNote: creating the invoice via the CRM API already logs an `invoice.created` entry to the opportunity's timeline automatically — no separate \"log to timeline\" step is needed in this flow.\n"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "finance-agent-opportunity-closed-won",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Opportunity Closed Won Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "webhookId": "finance-agent-opportunity-closed-won"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "crm-base-url",
+              "name": "crm_base_url",
+              "value": "https://your-crm-domain.example.com",
+              "type": "string"
+            },
+            {
+              "id": "crm-api-key",
+              "name": "crm_api_key",
+              "value": "REPLACE_WITH_YOUR_CRM_API_KEY",
+              "type": "string"
+            },
+            {
+              "id": "webhook-secret",
+              "name": "webhook_secret",
+              "value": "REPLACE_WITH_YOUR_WEBHOOK_SECRET",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "config-node",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{ JSON.stringify($json.body) }}",
+        "secret": "={{ $('Config').first().json.webhook_secret }}",
+        "dataPropertyName": "expectedSignature"
+      },
+      "id": "compute-signature",
+      "name": "Compute Expected Signature",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Uses n8n's built-in Crypto node above rather than Node's crypto module\n// directly — n8n's Code node sandbox disallows 'require(\"crypto\")'.\nconst received = $json.headers['x-crm-signature'] || '';\nconst expected = 'sha256=' + $json.expectedSignature;\n\nif (received !== expected) {\n  throw new Error('Webhook signature verification failed — check that the webhook secret in the Config node matches the CRM Webhooks page.');\n}\n\nreturn $input.all();"
+      },
+      "id": "verify-signature",
+      "name": "Verify Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const event = $input.first().json.body;\nconst opportunity = event.data.opportunity;\n\nreturn [{ json: { ...event, opportunityId: opportunity.id, amount: Number(opportunity.value) } }];"
+      },
+      "id": "prepare-invoice-data",
+      "name": "Prepare Invoice Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.crm_base_url }}/api/v1/invoices",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Config').first().json.crm_api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ opportunityId: $json.opportunityId, amount: $json.amount }) }}",
+        "options": {}
+      },
+      "id": "create-invoice",
+      "name": "Create Invoice",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {},
+      "id": "accounting-tool-placeholder",
+      "name": "Accounting Tool (placeholder)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1560, 300],
+      "notesInFlow": true,
+      "notes": "Replace with a real Xero/QuickBooks/Stripe node — use $json.invoice.id from the previous step as the source record to reconcile against."
+    }
+  ],
+  "connections": {
+    "Opportunity Closed Won Webhook": {
+      "main": [[{ "node": "Config", "type": "main", "index": 0 }]]
+    },
+    "Config": {
+      "main": [
+        [{ "node": "Compute Expected Signature", "type": "main", "index": 0 }]
+      ]
+    },
+    "Compute Expected Signature": {
+      "main": [[{ "node": "Verify Signature", "type": "main", "index": 0 }]]
+    },
+    "Verify Signature": {
+      "main": [[{ "node": "Prepare Invoice Data", "type": "main", "index": 0 }]]
+    },
+    "Prepare Invoice Data": {
+      "main": [[{ "node": "Create Invoice", "type": "main", "index": 0 }]]
+    },
+    "Create Invoice": {
+      "main": [
+        [
+          {
+            "node": "Accounting Tool (placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}
