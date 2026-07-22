@@ -16,6 +16,10 @@ Requirements: Node.js 20+, npm, Docker (for the local Postgres database).
    ```
    cp .env.example .env
    ```
+   Generate a real `SESSION_SECRET` (the placeholder value intentionally fails at startup as a safety check):
+   ```
+   node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+   ```
 3. Start the local database:
    ```
    docker compose up -d
@@ -48,4 +52,17 @@ Requirements: Node.js 20+, npm, Docker (for the local Postgres database).
 | `npm run db:seed`      | Load demo data (a demo tenant + admin user, safe to re-run) |
 | `npm run db:studio`    | Open Prisma Studio, a browser GUI for the database          |
 
-The demo seed creates one tenant with an admin user (`admin@demo.test` / `demo-password-123`) — login isn't built yet (Phase 3), but the data is there to build against.
+The demo seed creates one tenant with an admin user (`admin@demo.test` / `demo-password-123`).
+
+## Auth API (Phase 3)
+
+Email/password auth with sessions stored in the database (not stateless JWTs), so revoking a session is just deleting a row. Cookies are `httpOnly`, `sameSite=lax`, and `secure` in production.
+
+| Endpoint           | Method | What it does                                                  |
+| ------------------ | ------ | ------------------------------------------------------------- |
+| `/api/auth/signup` | POST   | Creates a new tenant + its first admin user, starts a session |
+| `/api/auth/login`  | POST   | Logs in an existing user, starts a session                    |
+| `/api/auth/logout` | POST   | Ends the current session                                      |
+| `/api/auth/me`     | GET    | Returns the currently logged-in user, or 401                  |
+
+Accounts lock for 15 minutes after 5 consecutive failed login attempts. Login/signup don't yet have IP-based rate limiting — that's covered project-wide in the Phase 17 hardening pass.

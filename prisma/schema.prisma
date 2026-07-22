@@ -29,12 +29,14 @@ model Tenant {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  tenantId     String   @map("tenant_id")
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  role         Role     @default(MEMBER)
-  createdAt    DateTime @default(now()) @map("created_at")
+  id                  String    @id @default(cuid())
+  tenantId            String    @map("tenant_id")
+  email               String    @unique
+  passwordHash        String    @map("password_hash")
+  role                Role      @default(MEMBER)
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until")
+  createdAt           DateTime  @default(now()) @map("created_at")
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   sessions Session[]
