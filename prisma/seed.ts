@@ -25,7 +25,9 @@ async function main() {
     },
   });
 
-  console.log(`Seeded tenant "${tenant.name}" (${tenant.id}) with admin user ${admin.email}`);
+  console.log(
+    `Seeded tenant "${tenant.name}" (${tenant.id}) with admin user ${admin.email}`,
+  );
 }
 
 main()

@@ -20,7 +20,12 @@ Requirements: Node.js 20+, npm, Docker (for the local Postgres database).
    ```
    docker compose up -d
    ```
-4. Start the dev server:
+4. Apply the database schema and load demo data:
+   ```
+   npm run db:migrate
+   npm run db:seed
+   ```
+5. Start the dev server:
    ```
    npm run dev
    ```
@@ -28,15 +33,19 @@ Requirements: Node.js 20+, npm, Docker (for the local Postgres database).
 
 ## Useful commands
 
-| Command                | What it does                            |
-| ---------------------- | --------------------------------------- |
-| `npm run dev`          | Start the app in development mode       |
-| `npm run build`        | Build the app for production            |
-| `npm run start`        | Run a production build                  |
-| `npm run lint`         | Check code style/quality                |
-| `npm run test`         | Run the automated test suite once       |
-| `npm run test:watch`   | Run tests continuously while developing |
-| `npm run format`       | Auto-format all files                   |
-| `npm run format:check` | Check formatting without changing files |
+| Command                | What it does                                                |
+| ---------------------- | ----------------------------------------------------------- |
+| `npm run dev`          | Start the app in development mode                           |
+| `npm run build`        | Build the app for production                                |
+| `npm run start`        | Run a production build                                      |
+| `npm run lint`         | Check code style/quality                                    |
+| `npm run test`         | Run the automated test suite once                           |
+| `npm run test:watch`   | Run tests continuously while developing                     |
+| `npm run format`       | Auto-format all files                                       |
+| `npm run format:check` | Check formatting without changing files                     |
+| `npm run db:migrate`   | Apply database schema changes (Prisma migrations)           |
+| `npm run db:generate`  | Regenerate the Prisma client after a schema change          |
+| `npm run db:seed`      | Load demo data (a demo tenant + admin user, safe to re-run) |
+| `npm run db:studio`    | Open Prisma Studio, a browser GUI for the database          |
 
-Database schema and migrations are introduced in Phase 2 (Prisma) — this README will grow to cover `npx prisma migrate dev` and seeding once that lands.
+The demo seed creates one tenant with an admin user (`admin@demo.test` / `demo-password-123`) — login isn't built yet (Phase 3), but the data is there to build against.
