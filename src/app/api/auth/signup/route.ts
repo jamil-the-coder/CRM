@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { createSession, hashPassword, setSessionCookie } from "@/lib/auth";
+import { DEFAULT_PIPELINE_STAGES } from "@/lib/pipeline-stages";
 
 const signupSchema = z.object({
   tenantName: z.string().trim().min(1).max(200),
@@ -45,6 +46,12 @@ export async function POST(request: NextRequest) {
           passwordHash,
           role: "ADMIN",
         },
+      });
+      await tx.pipelineStage.createMany({
+        data: DEFAULT_PIPELINE_STAGES.map((stage) => ({
+          tenantId: tenant.id,
+          ...stage,
+        })),
       });
       return { user, tenant };
     });

@@ -34,6 +34,7 @@ model Tenant {
   webhookDeliveries WebhookDelivery[]
   apiKeys           ApiKey[]
   callBookings      CallBooking[]
+  pipelineStages    PipelineStage[]
 
   @@map("tenants")
 }
@@ -258,4 +259,25 @@ model CallBooking {
 
   @@index([tenantId])
   @@map("call_bookings")
+}
+
+// Defines the configurable Kanban columns for a tenant's opportunity pipeline.
+// Opportunity.stage stays a plain string (matching PipelineStage.key) rather
+// than a foreign key, so the Phase 8 API contract (stage as a string) never
+// has to change.
+model PipelineStage {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  key       String
+  label     String
+  sortOrder Int      @map("sort_order")
+  isWon     Boolean  @default(false) @map("is_won")
+  isLost    Boolean  @default(false) @map("is_lost")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, key])
+  @@index([tenantId])
+  @@map("pipeline_stages")
 }
