@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
+import { cookies } from "next/headers";
 import type { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
@@ -96,11 +97,9 @@ export type AuthenticatedUser = {
   tenantId: string;
 };
 
-/** Reads the session cookie, validates it against the database, and returns the caller's identity — or null if unauthenticated/expired. */
-export async function getSessionUser(
-  request: NextRequest,
+async function resolveSessionUser(
+  token: string | undefined,
 ): Promise<AuthenticatedUser | null> {
-  const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
 
   const tokenHash = hashSessionToken(token);
@@ -124,6 +123,19 @@ export async function getSessionUser(
     role: session.user.role,
     tenantId: session.user.tenantId,
   };
+}
+
+/** Reads the session cookie, validates it against the database, and returns the caller's identity — or null if unauthenticated/expired. For use in Route Handlers, which receive a NextRequest. */
+export async function getSessionUser(
+  request: NextRequest,
+): Promise<AuthenticatedUser | null> {
+  return resolveSessionUser(request.cookies.get(SESSION_COOKIE_NAME)?.value);
+}
+
+/** Same as getSessionUser, but for Server Components/layouts, which read cookies via next/headers instead of a request object. */
+export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
+  const cookieStore = await cookies();
+  return resolveSessionUser(cookieStore.get(SESSION_COOKIE_NAME)?.value);
 }
 
 export async function deleteSessionByToken(token: string) {
