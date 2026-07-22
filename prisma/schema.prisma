@@ -23,7 +23,11 @@ model Tenant {
   plan      String   @default("trial")
   createdAt DateTime @default(now()) @map("created_at")
 
-  users User[]
+  users         User[]
+  contacts      Contact[]
+  leads         Lead[]
+  opportunities Opportunity[]
+  activities    Activity[]
 
   @@map("tenants")
 }
@@ -38,8 +42,10 @@ model User {
   lockedUntil         DateTime? @map("locked_until")
   createdAt           DateTime  @default(now()) @map("created_at")
 
-  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  sessions Session[]
+  tenant               Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessions             Session[]
+  ownedLeads           Lead[]        @relation("LeadOwner")
+  ownedOpportunities   Opportunity[] @relation("OpportunityOwner")
 
   @@map("users")
 }
@@ -54,4 +60,87 @@ model Session {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
+}
+
+model Contact {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  firstName  String   @map("first_name")
+  lastName   String?  @map("last_name")
+  email      String?
+  phone      String?
+  company    String?
+  dedupeKey  String?  @map("dedupe_key")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leads         Lead[]
+  opportunities Opportunity[]
+
+  @@index([tenantId])
+  @@index([tenantId, dedupeKey])
+  @@map("contacts")
+}
+
+model Lead {
+  id          String   @id @default(cuid())
+  tenantId    String   @map("tenant_id")
+  contactId   String   @map("contact_id")
+  source      String   @default("manual")
+  status      String   @default("new")
+  ownerUserId String?  @map("owner_user_id")
+  score       Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact       Contact       @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  owner         User?         @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  opportunities Opportunity[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("leads")
+}
+
+model Opportunity {
+  id                String    @id @default(cuid())
+  tenantId          String    @map("tenant_id")
+  contactId         String    @map("contact_id")
+  leadId            String?   @map("lead_id")
+  name              String
+  stage             String    @default("new")
+  value             Decimal   @default(0) @db.Decimal(12, 2)
+  currency          String    @default("USD")
+  probability       Int       @default(0)
+  ownerUserId       String?   @map("owner_user_id")
+  expectedCloseDate DateTime? @map("expected_close_date")
+  closedAt          DateTime? @map("closed_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  lead    Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  owner   User?   @relation("OpportunityOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, stage])
+  @@map("opportunities")
+}
+
+model Activity {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  type       String
+  payload    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, entityType, entityId])
+  @@map("activities")
 }
