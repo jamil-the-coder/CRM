@@ -200,6 +200,22 @@
 - Committed as `Phase 8: public API in (n8n-facing) + OpenAPI [verified]` and pushed to `origin/main`.
 - **Next phase:** Phase 9 — Calendar integration interface (`CalendarProvider` interface + `MockCalendarProvider`, `CallBooking` model, booking endpoint, `call.booked` event).
 
+### Phase 9 — Calendar integration interface + mock provider — **DONE**
+
+- Added the `CalendarProvider` interface (`findAvailableSlots`/`bookSlot`/`cancelBooking`) and `MockCalendarProvider` (hourly weekday 9–5 slots, fake booking IDs) behind a `getCalendarProvider()` factory keyed off `CALENDAR_PROVIDER` — real Google/Outlook providers in Phase 15 are a config change, not a rewrite of any caller.
+- Added `CallBooking`, plus both an n8n-facing (`/api/v1/calendar/slots`, `/api/v1/call-bookings`, API-key auth) and session-authenticated (`/api/calendar/slots`, `/api/call-bookings`) surface for finding a slot and booking it against a lead. Booking logs an Activity entry and fires `call.booked` (the event type/webhook plumbing was already in place from Phase 7).
+- Built a **Calls** page: pick a lead and an available mock slot, book it, see existing bookings with status.
+- **Verified (all passing):**
+  - `npm run test` — 51/51 (up from 45): the mock provider's slot generation only ever returns weekday/business-hours times and unique booking IDs per call; the full slots→book→list flow through an API key with the `call.booked` Activity entry confirmed in the database; a `leadId` from another tenant correctly rejected with 400.
+  - `npm run lint`, `npx tsc --noEmit`, `npm run build` — clean.
+  - A real Playwright run: added a contact, booked a call against it through the Calls UI, confirmed the booking lists with `confirmed` status.
+- **Housekeeping:** added an `argsIgnorePattern: "^_"` override to `eslint.config.mjs` for `@typescript-eslint/no-unused-vars` — `MockCalendarProvider`'s interface-mandated but unused parameters (e.g. `cancelBooking`, which has nothing to actually cancel) needed a clean way to signal "intentionally unused," not a one-off suppression comment.
+- **DECISIONS:**
+  - Kept the mock provider's business hours in the server's local timezone rather than modeling per-tenant timezones — reasonable for a mock; real providers in Phase 15 will need to handle this properly since they talk to real calendars.
+- **NEEDS FROM OPERATOR:** none blocking now. Phase 15 (real Google/Outlook calendars) will need the operator to supply OAuth app credentials for each — flagged in advance, not yet needed.
+- Committed as `Phase 9: calendar integration interface + mock provider [verified]` and pushed to `origin/main`.
+- **Next phase:** Phase 10 — n8n Sales Agent reference flow (importable workflow JSON + setup guide: triage a new lead, book a slot via the Phase 8/9 API, notify the rep, write the outcome back).
+
 ---
 
 ## STUCK
