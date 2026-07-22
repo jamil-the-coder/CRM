@@ -2,7 +2,7 @@
 
 An AI-native, multi-tenant CRM built to be sold to other businesses, with bidirectional automation via n8n.
 
-See [`PLAN.md`](./PLAN.md) for the full build plan (tech stack, phases, event contract, data model) and [`PROGRESS.md`](./PROGRESS.md) for a running log of what's been built and verified so far.
+See [`PLAN.md`](./PLAN.md) for the full build plan (tech stack, phases, event contract, data model), [`PROGRESS.md`](./PROGRESS.md) for a running log of what's been built and verified so far, and [`DEMO.md`](./DEMO.md) for a 5-minute demo script to run for a prospective customer.
 
 ## Running locally
 

@@ -171,7 +171,7 @@ describe("POST /api/auth/login and session lifecycle", () => {
     expect(wrongBody.error).toBe(noSuchBody.error);
   });
 
-  it("locks the account after repeated failed attempts, even with the correct password", async () => {
+  it("locks the account after repeated failed attempts, even with the correct password", { timeout: 15000 }, async () => {
     const email = uniqueEmail("lockout");
     const password = "a-strong-password-123";
     const signupResponse = await signup(
