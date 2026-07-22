@@ -87,6 +87,28 @@
 - Committed as `Phase 2: database & multi-tenancy foundation [verified]` and pushed to `origin/main`.
 - **Next phase:** Phase 3 — Auth (signup/login/logout, session-cookie middleware, tenant scoping, admin/member roles).
 
+### Phase 3 — Auth — **DONE**
+
+- Built `src/lib/auth.ts`: password hashing (bcrypt, cost 12), session token generation/verification, cookie helpers, and account-lockout tracking.
+- Built four endpoints: `POST /api/auth/signup` (creates a new tenant + its first admin user), `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`.
+- Added a migration for `User.failedLoginAttempts` / `User.lockedUntil` to support account lockout.
+- Wrote 10 automated tests covering signup, duplicate email, weak password, the full login→me→logout lifecycle, unauthenticated access, enumeration-resistant error messages, and the lockout threshold.
+- Updated `README.md` and `.env.example` with the auth setup step and endpoint docs.
+- **Verified (all passing):** `npm run test` (10/10), `npm run lint`, `npx tsc --noEmit` — all clean.
+- **Security review performed (this was requested explicitly this session):**
+  - Passwords: bcrypt cost 12, `passwordHash` confirmed (via grep) to never appear in any API response.
+  - Sessions: opaque random 256-bit tokens; only an **HMAC-SHA256 of the token (keyed with `SESSION_SECRET`)** is stored in the DB — a leaked database dump alone can't be replayed as a valid session without also knowing the secret. Cookies are `httpOnly`, `sameSite=lax`, and `secure` in production.
+  - **Found and fixed a timing side-channel during the review:** the login endpoint originally returned immediately (skipping the bcrypt compare) when an email didn't exist, meaning a "no such account" response was measurably faster than a "wrong password" response — this would let an attacker enumerate valid emails purely from response time. Fixed by always running a bcrypt compare (against a fixed dummy hash when there's no matching user) so timing is consistent either way, confirmed both paths now return an identical generic error message.
+  - Brute force: per-account lockout (5 failed attempts → 15 min lock), tracked in the DB. Broad IP-based rate limiting across all public endpoints is intentionally deferred to the Phase 17 hardening pass already in `PLAN.md`, not an oversight — flagging here so it isn't forgotten.
+  - Race condition: duplicate-email signups racing between the existence check and the create transaction are caught via the DB's unique constraint (Prisma error `P2002`) and returned as a normal 409, not a 500.
+  - Checked `npm audit` after adding `bcryptjs`, `zod`, `pg`, `@prisma/adapter-pg` — none of these introduced new advisories; the only findings are the same pre-existing Next.js-bundled ones from Phase 1 plus one new dev-only CLI tool dependency (shadcn's bundled MCP SDK, not shipped in the app).
+- **DECISIONS:**
+  - Sessions stay fixed-duration (7 days) with no rolling renewal in v1 — simplest to reason about; can add renewal later if it becomes a usability complaint.
+  - No password complexity rules beyond a 10-character minimum — follows current NIST guidance (favor length + rate limiting/lockout over forced complexity).
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 3: auth [verified]` and pushed to `origin/main`.
+- **Next phase:** Phase 4 — Core CRM data model & CRUD (`Contact`, `Lead`, `Opportunity`, `Activity`, tenant-scoped endpoints, dedupe-check stub).
+
 ---
 
 ## STUCK
