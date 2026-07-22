@@ -109,6 +109,24 @@
 - Committed as `Phase 3: auth [verified]` and pushed to `origin/main`.
 - **Next phase:** Phase 4 — Core CRM data model & CRUD (`Contact`, `Lead`, `Opportunity`, `Activity`, tenant-scoped endpoints, dedupe-check stub).
 
+### Phase 4 — Core CRM data model & CRUD — **DONE**
+
+- Added `Contact`, `Lead`, `Opportunity`, `Activity` models — every one carries `tenant_id`, cascade-deletes with its tenant.
+- Built tenant-scoped CRUD API routes for all four (list/create/read/update/delete; `Activity` is list/create only — it's an append-only timeline).
+- Lead status changes and opportunity stage changes (including `closed_won`/`closed_lost`) write to the `Activity` timeline using the same event names PLAN.md's webhook contract already specifies (`lead.status_changed`, `opportunity.stage_changed`, etc.) — Phase 7 will wire these straight into outbound webhooks.
+- Added a stub dedupe interface (`src/lib/dedupe.ts`): exact email/phone match, flags possible duplicates in the create response without blocking creation. Real fuzzy/trigram matching is Phase 14, as planned.
+- Added a shared `requireSession()` auth guard (`src/lib/api-auth.ts`) and a test-support helper (`src/lib/test-support.ts`, spins up a fresh tenant+session for a test) — both reused across all four entities' route/test files rather than duplicating the pattern each time.
+- **Verified (all passing):** `npm run test` (20/20 — create/read/update/delete per entity, cross-tenant `contactId`/`leadId` rejected on create, and dedicated tenant-isolation tests confirming a second tenant gets 404 for another tenant's records across GET/PATCH/DELETE/list), `npm run lint`, `npx tsc --noEmit`.
+- **Problems hit & resolved:**
+  - Prisma 7's stricter JSON input typing rejected a plain `Record<string, unknown>` for the `Activity.payload` field — fixed by casting through `Prisma.InputJsonValue` at the two call sites that build it.
+- **Security note:** tenant isolation is enforced by scoping every single-record lookup with `findFirst({ where: { id, tenantId } })` rather than `findUnique({ where: { id } })` — an attacker who guesses/knows another tenant's record ID gets an identical 404 to a nonexistent ID, never a 403 that would confirm the record exists.
+- **DECISIONS:**
+  - `Opportunity.stage` is a plain string for now (`"new"`, `"closed_won"`, `"closed_lost"`, etc.), not a foreign key to a stages table — `PipelineStage` (configurable per-tenant stages) is explicitly a Phase 11 concern per `PLAN.md`; introducing it now would be premature.
+  - Dedupe-flagging is informational only (returns `possibleDuplicates` alongside the created contact) rather than blocking creation — matches the product spec's "dedupe hooks" framing; a hard block would need a UI to resolve/merge duplicates that doesn't exist yet.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 4: core CRM data model & CRUD [verified]` and pushed to `origin/main`.
+- **Next phase:** Phase 5 — Minimal UI shell (login/signup pages, authenticated layout, empty states for contacts/leads/opportunities).
+
 ---
 
 ## STUCK
