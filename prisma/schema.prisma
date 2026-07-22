@@ -304,3 +304,32 @@ model Invoice {
   @@index([opportunityId])
   @@map("invoices")
 }
+
+// Generic IP-based rate limiter backing (login, signup, and other public
+// endpoints) — a plain Postgres table rather than Redis, consistent with the
+// "one less service to run" decision from PLAN.md's Phase 0 tech-stack pick.
+model RateLimitHit {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([key, createdAt])
+  @@map("rate_limit_hits")
+}
+
+// Records security-sensitive actions (auth events, API key/webhook endpoint
+// changes) independently of the per-entity Activity timeline, which only
+// tracks business-record changes (leads/opportunities/etc).
+model AuditLog {
+  id          String   @id @default(cuid())
+  tenantId    String?  @map("tenant_id")
+  actorUserId String?  @map("actor_user_id")
+  action      String
+  metadata    Json?
+  ipAddress   String?  @map("ip_address")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}

@@ -3,6 +3,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/api-auth";
 import { generateApiKey } from "@/lib/api-key-auth";
+import { recordAuditLog } from "@/lib/audit-log";
+import { getClientIp } from "@/lib/rate-limit";
 
 const createApiKeySchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -44,6 +46,14 @@ export async function POST(request: NextRequest) {
       keyHash,
       keyPrefix,
     },
+  });
+
+  await recordAuditLog({
+    tenantId: auth.user.tenantId,
+    actorUserId: auth.user.id,
+    action: "api_key.created",
+    metadata: { apiKeyId: apiKey.id, name: apiKey.name },
+    ipAddress: getClientIp(request),
   });
 
   // The only time the full key is ever available — the DB only holds its hash from here on.

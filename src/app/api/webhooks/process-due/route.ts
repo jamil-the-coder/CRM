@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { processDueDeliveries } from "@/lib/webhooks";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 /**
  * Meant to be hit periodically by an external scheduler (cron job, Vercel
@@ -9,6 +10,17 @@ import { processDueDeliveries } from "@/lib/webhooks";
  * deliveries in one pass.
  */
 export async function POST(request: NextRequest) {
+  if (!process.env.VITEST) {
+    const ipAddress = getClientIp(request);
+    const { limited } = await checkRateLimit(`process-due:${ipAddress ?? "unknown"}`, {
+      windowMs: 60 * 1000,
+      max: 30,
+    });
+    if (limited) {
+      return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+    }
+  }
+
   const providedSecret = request.headers
     .get("authorization")
     ?.replace(/^Bearer\s+/i, "");

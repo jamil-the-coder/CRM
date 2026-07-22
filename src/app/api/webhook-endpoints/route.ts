@@ -4,6 +4,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/api-auth";
 import { isSafeWebhookUrl } from "@/lib/url-safety";
+import { recordAuditLog } from "@/lib/audit-log";
+import { getClientIp } from "@/lib/rate-limit";
 
 const createWebhookEndpointSchema = z.object({
   url: z.string().trim().url().max(2000),
@@ -53,6 +55,14 @@ export async function POST(request: NextRequest) {
       url: parsed.data.url,
       secret: crypto.randomBytes(24).toString("base64url"),
     },
+  });
+
+  await recordAuditLog({
+    tenantId: auth.user.tenantId,
+    actorUserId: auth.user.id,
+    action: "webhook_endpoint.created",
+    metadata: { webhookEndpointId: endpoint.id, url: endpoint.url },
+    ipAddress: getClientIp(request),
   });
 
   return NextResponse.json({ endpoint }, { status: 201 });

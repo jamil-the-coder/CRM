@@ -11,5 +11,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    // Default 5s is too tight once the full suite runs its DB-heavy tests in
+    // parallel under load (bcrypt cost-12 hashing, multi-step CRUD flows) —
+    // individual tests were passing in isolation but timing out under load.
+    testTimeout: 15000,
   },
 });

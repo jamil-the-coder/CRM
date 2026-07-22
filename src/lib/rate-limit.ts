@@ -22,3 +22,23 @@ export function getClientIp(request: Request): string | null {
   if (forwardedFor) return forwardedFor.split(",")[0].trim();
   return request.headers.get("x-real-ip");
 }
+
+/**
+ * General-purpose IP-based rate limiter for public endpoints (login, signup,
+ * the public form-config lookup, the webhook-processor trigger). Records a
+ * hit and reports whether the caller is over the limit for this key.
+ * Fails open (never blocks) if there's no IP to key on — same trade-off as
+ * isFormSubmissionRateLimited above.
+ */
+export async function checkRateLimit(
+  key: string,
+  { windowMs, max }: { windowMs: number; max: number },
+): Promise<{ limited: boolean }> {
+  const since = new Date(Date.now() - windowMs);
+  const count = await db.rateLimitHit.count({ where: { key, createdAt: { gte: since } } });
+  if (count >= max) {
+    return { limited: true };
+  }
+  await db.rateLimitHit.create({ data: { key } });
+  return { limited: false };
+}

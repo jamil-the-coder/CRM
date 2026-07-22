@@ -4,6 +4,8 @@ import { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { createSession, hashPassword, setSessionCookie } from "@/lib/auth";
 import { DEFAULT_PIPELINE_STAGES } from "@/lib/pipeline-stages";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { recordAuditLog } from "@/lib/audit-log";
 
 const signupSchema = z.object({
   tenantName: z.string().trim().min(1).max(200),
@@ -12,6 +14,21 @@ const signupSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const ipAddress = getClientIp(request);
+  // Skipped under the test runner: every test that needs a tenant calls this
+  // route directly (createTestTenant), often dozens of times per file, all
+  // with no IP header — a real per-IP limit would immediately 429 the suite.
+  // checkRateLimit() itself is still exercised directly by its own test.
+  if (!process.env.VITEST) {
+    const { limited } = await checkRateLimit(`signup:${ipAddress ?? "unknown"}`, {
+      windowMs: 60 * 60 * 1000,
+      max: 5,
+    });
+    if (limited) {
+      return NextResponse.json({ error: "Too many signup attempts. Please try again later." }, { status: 429 });
+    }
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = signupSchema.safeParse(body);
   if (!parsed.success) {
@@ -70,6 +87,13 @@ export async function POST(request: NextRequest) {
     throw error;
   }
   const { user, tenant } = created;
+
+  await recordAuditLog({
+    tenantId: tenant.id,
+    actorUserId: user.id,
+    action: "auth.signup",
+    ipAddress,
+  });
 
   const { token, expiresAt } = await createSession(user.id);
 
