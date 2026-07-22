@@ -248,6 +248,22 @@
 - Committed as `Phase 11: opportunity pipeline UI + stage events [verified]` and pushed to `origin/main`.
 - **Next phase:** Phase 12 — n8n Finance Agent reference flow (`opportunity.closed_won` → create an invoice record via the CRM API → log to the opportunity timeline). This completes the full end-to-end mock journey from `PLAN.md` §5.
 
+### Phase 12 — n8n Finance Agent reference flow — **DONE**
+
+- **This phase completes the full end-to-end mock journey described in `PLAN.md` §5**: a lead comes in (Phase 6 form) → gets triaged and a call booked (Phase 10 Sales Agent) → converts to an opportunity (Phase 4) → closes won (Phase 11 Kanban) → an invoice is created (this phase) — all visible on the dashboard.
+- Added `Invoice` (explicitly a placeholder for a real accounting-tool integration — Xero/QuickBooks/Stripe wiring is a stated v1 non-goal in `PLAN.md`) and a v1 API endpoint that creates one against an opportunity, automatically logging `invoice.created` to that opportunity's Activity timeline (no separate "log to timeline" step needed anywhere).
+- Built a minimal **Invoices** page for demo visibility.
+- Built `n8n-flows/finance-agent.json` + `finance-agent-setup.md`: webhook on `opportunity.closed_won` → verify signature → create the invoice via the CRM API → a placeholder node for a real accounting tool.
+- **Verified with the same rigor as Phase 10** — and this time it worked correctly on the **first real run**, because both lessons learned while verifying the Sales Agent flow were applied from the start: n8n's built-in Crypto node instead of `require('crypto')`, and `includeOtherFields: true` on the Config Set node. Imported into a fresh disposable n8n instance, activated, triggered via a real HTTP POST to its production webhook URL against a real closed-won test opportunity — produced a genuine `Invoice` row with the correct amount, and independently confirmed via the database that `invoice.created` was logged automatically.
+- **Verified (all passing):**
+  - `npm run test` — 56/56 (up from 54): invoice creation, tenant isolation on `opportunityId`, and the automatic activity log entry.
+  - `npm run lint`, `npx tsc --noEmit`, `npm run build` — clean.
+  - A real Playwright run confirming the Invoices page renders correctly both empty and with data.
+- All disposable n8n containers/images and test tenants were torn down afterward; the operator's own pre-existing n8n container was, again, left completely untouched.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 12: n8n Finance Agent reference flow [verified]` and pushed to `origin/main`.
+- **Next phase:** Phase 13 — Dashboard & reporting (pipeline value by stage, conversion rates, lead-source breakdown, time series).
+
 ---
 
 ## STUCK
