@@ -280,6 +280,23 @@
 - Committed as `Phase 13: dashboard & reporting [verified]` and pushed to `origin/main`.
 - **Next phase:** Phase 14 — Lead dedupe matching (real fuzzy/trigram matching on email/phone/company, replacing the Phase 4 exact-match stub) + enrichment-hook interface.
 
+### Phase 14 — Lead dedupe matching (real fuzzy logic) + enrichment hook — **DONE**
+
+- Enabled Postgres's `pg_trgm` extension (bundled with standard Postgres — no external service, no new dependency) via a raw-SQL migration, plus GIN trigram indexes on contact name and company for lookup performance.
+- Replaced the Phase 4 exact-match-only stub with real fuzzy matching: exact email/phone match stays first (cheap, indexed), with a trigram-similarity fallback on full name and company, tenant-scoped, combined and deduplicated by contact id. Still informational only — never blocks contact creation, same as before.
+- Added the enrichment-hook interface from the product spec: `ContactEnrichmentProvider` + a `NoopEnrichmentProvider` default, following the exact same provider-swap pattern as `CalendarProvider` (Phase 9) — a real enrichment service is a config change away, not a rewrite. Wired into both contact-creation routes as a best-effort step that can never throw or block creation.
+- **Verified exactly as the phase asked — "tests for exact match, fuzzy match, and no-false-positive cases":**
+  - Exact match: an email match is found even with a completely different name.
+  - Fuzzy match: a one-letter name typo ("Jon Smith" vs "John Smith") and a company-name variation ("Acme Corp" vs "Acme Corporation") are both caught.
+  - **No false positives**: two contacts with genuinely different names and companies are correctly _not_ flagged — this is the check that actually validates the 0.35/0.45 thresholds aren't too loose, and it's run against real Postgres trigram similarity, not a hand-rolled scoring function, so the thresholds are proven against the actual database engine that runs them in production.
+  - Also verified: tenant isolation (fuzzy matching never crosses tenant boundaries) and the no-input case.
+- **Verified (all passing):** `npm run test` — 63/63 (up from 57); `npm run lint`, `npx tsc --noEmit`, `npm run build` — clean. No UI changed this phase — duplicate results were already an API-only field, not surfaced in the UI, before this phase.
+- **DECISIONS:**
+  - `EnrichmentResult` only includes fields that already exist on `Contact` today (just `company`) rather than speculative fields like `jobTitle`/`companySize` that don't have a column yet — avoids a design/implementation mismatch that would only surface once a real provider was plugged in and started returning those fields.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 14: lead dedupe matching (real fuzzy logic) + enrichment hook [verified]` and pushed to `origin/main`.
+- **Next phase:** Phase 15 — Real calendar providers (Google Calendar, Outlook) implementing the Phase 9 `CalendarProvider` interface. **Expected to be BLOCKED** — needs the operator to supply real OAuth app credentials for each provider, which don't exist yet.
+
 ---
 
 ## STUCK
