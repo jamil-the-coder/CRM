@@ -232,6 +232,22 @@
 - Committed as `Phase 10: n8n Sales Agent reference flow [verified]` and pushed to `origin/main`.
 - **Next phase:** Phase 11 — Opportunity pipeline UI + stage events (Kanban board, configurable `PipelineStage` per tenant).
 
+### Phase 11 — Opportunity pipeline UI + stage events — **DONE**
+
+- Added `PipelineStage` (per-tenant configurable Kanban columns), seeded with six sensible defaults automatically on signup, plus a lazy-backfill helper (`ensurePipelineStages`) for any tenant that predates this feature.
+- Deliberately kept `Opportunity.stage` as a plain string (matching `PipelineStage.key`) rather than turning it into a foreign key — the Phase 8 API contract already documents `stage` as a string, and this way that contract never has to change.
+- Replaced the flat opportunities list with a real Kanban board: columns per stage, drag a card to move it, drop it and its stage updates — which already fires `opportunity.stage_changed`/`closed_won`/`closed_lost` (wired up back in Phases 4/7), so no event-plumbing changes were needed here.
+- Built the drag-and-drop with plain mouse events (`mousedown`/`mousemove`/`mouseup` + `elementFromPoint`) rather than the browser's native HTML5 drag-and-drop API — a deliberate choice: native DnD is well known to be difficult to drive reliably from headless browser automation, and this way the interaction could actually be verified end-to-end rather than taken on faith.
+- **Verified (all passing):**
+  - `npm run test` — 54/54 (up from 51): default-stage seeding, custom stage creation landing at the correct `sortOrder`, duplicate-key rejection.
+  - `npm run lint`, `npx tsc --noEmit`, `npm run build` — clean.
+  - A real Playwright run: created a contact + opportunity via the API, loaded the Kanban board, performed an actual mouse-driven drag from the "New" column to "Qualified," and — rather than just trusting the UI repainted — made a follow-up API call afterward to confirm the opportunity's `stage` had genuinely changed server-side.
+- **DECISIONS:**
+  - No stage-reordering or stage-editing UI yet (create-only) — matches what `PLAN.md` asked for at this phase; full stage management is a natural but not-yet-requested follow-up.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 11: opportunity pipeline UI + stage events [verified]` and pushed to `origin/main`.
+- **Next phase:** Phase 12 — n8n Finance Agent reference flow (`opportunity.closed_won` → create an invoice record via the CRM API → log to the opportunity timeline). This completes the full end-to-end mock journey from `PLAN.md` §5.
+
 ---
 
 ## STUCK
