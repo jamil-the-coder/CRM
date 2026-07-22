@@ -127,6 +127,21 @@
 - Committed as `Phase 4: core CRM data model & CRUD [verified]` and pushed to `origin/main`.
 - **Next phase:** Phase 5 — Minimal UI shell (login/signup pages, authenticated layout, empty states for contacts/leads/opportunities).
 
+### Phase 5 — Minimal UI shell — **DONE**
+
+- Built login/signup pages (shadcn/ui Card+Input forms), an authenticated app shell with sidebar nav + logout, a dashboard with live contact/lead/open-opportunity counts, and list pages for contacts (with a working quick-add form)/leads/opportunities.
+- Added `getCurrentUser()` to `src/lib/auth.ts` (a `next/headers`-based sibling of the existing `getSessionUser()`, which reads from `NextRequest`) so Server Components/layouts can check auth without needing a request object. The `(app)` route group's layout uses it to redirect unauthenticated visitors to `/login` server-side, before any protected page renders.
+- Root `/` now redirects to `/dashboard` or `/login` depending on auth state; `/login` and `/signup` redirect already-authenticated visitors to `/dashboard`.
+- **Verified (all passing):** `npm run build` (clean production build, all 19 routes), `npm run lint`, `npx tsc --noEmit`, full Vitest suite (20/20, untouched by this phase) — **and**, per the master prompt's requirement to actually test UI changes in a browser, a real Playwright click-through: signup → empty dashboard → add a contact → dashboard/contacts reflect it → leads/opportunities empty states → logout → confirmed a protected page redirects to `/login` when logged out → logged back in successfully.
+- **Problems hit & resolved (worth knowing for future UI testing sessions):**
+  - Several stray `next dev` processes accumulated from my own earlier manual `(npm run dev &)` backgrounding across this session and silently kept squatting on port 3000, so later test runs were sometimes hitting a stale server. Killed all node processes and switched to letting the webapp-testing skill's `with_server.py` manage the dev server's lifecycle exclusively, rather than backgrounding it myself.
+  - Playwright's locator-based `.click()` (including with `force=True`) silently failed to trigger navigation on the very first click of a fresh page load, while `page.mouse.click()` at the same coordinates, a raw JS `.click()`, and direct `page.goto()` all worked correctly — this pointed to a hydration-timing issue (clicking before the client bundle finishes hydrating on a route's first-ever compile in dev mode with Turbopack), not a real product bug. Fixed the **test script** by using coordinate-based `mouse.click()` plus a settle delay after each navigation. The underlying feature itself was confirmed working via three independent methods before concluding this was tooling/timing, not application code.
+- **DECISIONS:**
+  - Kept the contacts list read/write (has a quick-add form) but left leads/opportunities as read-only list + empty state for now — creating a lead or opportunity needs a contact-picker UI, which is a reasonable amount of added complexity to defer; nothing in `PLAN.md` promised lead/opportunity creation UI at this phase.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 5: minimal UI shell [verified]` and pushed to `origin/main`.
+- **Next phase:** Phase 6 — Embeddable form builder v1 (form definition, embed snippet, public submission endpoint with honeypot + rate limiting, creates a lead).
+
 ---
 
 ## STUCK
