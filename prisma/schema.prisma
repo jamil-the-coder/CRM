@@ -33,6 +33,7 @@ model Tenant {
   webhookEndpoints  WebhookEndpoint[]
   webhookDeliveries WebhookDelivery[]
   apiKeys           ApiKey[]
+  callBookings      CallBooking[]
 
   @@map("tenants")
 }
@@ -47,10 +48,10 @@ model User {
   lockedUntil         DateTime? @map("locked_until")
   createdAt           DateTime  @default(now()) @map("created_at")
 
-  tenant               Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  sessions             Session[]
-  ownedLeads           Lead[]        @relation("LeadOwner")
-  ownedOpportunities   Opportunity[] @relation("OpportunityOwner")
+  tenant             Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessions           Session[]
+  ownedLeads         Lead[]        @relation("LeadOwner")
+  ownedOpportunities Opportunity[] @relation("OpportunityOwner")
 
   @@map("users")
 }
@@ -68,15 +69,15 @@ model Session {
 }
 
 model Contact {
-  id         String   @id @default(cuid())
-  tenantId   String   @map("tenant_id")
-  firstName  String   @map("first_name")
-  lastName   String?  @map("last_name")
-  email      String?
-  phone      String?
-  company    String?
-  dedupeKey  String?  @map("dedupe_key")
-  createdAt  DateTime @default(now()) @map("created_at")
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  firstName String   @map("first_name")
+  lastName  String?  @map("last_name")
+  email     String?
+  phone     String?
+  company   String?
+  dedupeKey String?  @map("dedupe_key")
+  createdAt DateTime @default(now()) @map("created_at")
 
   tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   leads         Lead[]
@@ -103,6 +104,7 @@ model Lead {
   owner           User?            @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
   opportunities   Opportunity[]
   formSubmissions FormSubmission[]
+  callBookings    CallBooking[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -237,4 +239,23 @@ model ApiKey {
 
   @@index([tenantId])
   @@map("api_keys")
+}
+
+model CallBooking {
+  id              String   @id @default(cuid())
+  tenantId        String   @map("tenant_id")
+  leadId          String?  @map("lead_id")
+  provider        String   @default("mock")
+  externalEventId String   @map("external_event_id")
+  startsAt        DateTime @map("starts_at")
+  endsAt          DateTime @map("ends_at")
+  attendeeEmail   String   @map("attendee_email")
+  status          String   @default("confirmed")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lead   Lead?  @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@map("call_bookings")
 }

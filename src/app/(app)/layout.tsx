@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: "/contacts", label: "Contacts" },
   { href: "/leads", label: "Leads" },
   { href: "/opportunities", label: "Opportunities" },
+  { href: "/calls", label: "Calls" },
   { href: "/forms", label: "Forms" },
   { href: "/webhooks", label: "Webhooks" },
   { href: "/api-keys", label: "API Keys" },
