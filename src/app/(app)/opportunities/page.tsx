@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ensurePipelineStages } from "@/lib/pipeline-stages";
+import { Card, CardContent } from "@/components/ui/card";
 import { KanbanBoard } from "./kanban-board";
 
 export default async function OpportunitiesPage() {
@@ -27,23 +28,32 @@ export default async function OpportunitiesPage() {
         </p>
       </div>
 
-      <KanbanBoard
-        stages={stages.map((s) => ({
-          key: s.key,
-          label: s.label,
-          isWon: s.isWon,
-          isLost: s.isLost,
-        }))}
-        opportunities={opportunities.map((o) => ({
-          id: o.id,
-          name: o.name,
-          stage: o.stage,
-          value: o.value.toString(),
-          currency: o.currency,
-          contactName:
-            `${o.contact.firstName} ${o.contact.lastName ?? ""}`.trim(),
-        }))}
-      />
+      {opportunities.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-sm text-zinc-500">
+            No opportunities yet. Convert a lead or create one via the API to
+            start filling out your pipeline.
+          </CardContent>
+        </Card>
+      ) : (
+        <KanbanBoard
+          stages={stages.map((s) => ({
+            key: s.key,
+            label: s.label,
+            isWon: s.isWon,
+            isLost: s.isLost,
+          }))}
+          opportunities={opportunities.map((o) => ({
+            id: o.id,
+            name: o.name,
+            stage: o.stage,
+            value: o.value.toString(),
+            currency: o.currency,
+            contactName:
+              `${o.contact.firstName} ${o.contact.lastName ?? ""}`.trim(),
+          }))}
+        />
+      )}
     </div>
   );
 }
