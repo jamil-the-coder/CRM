@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: "/contacts", label: "Contacts" },
   { href: "/leads", label: "Leads" },
   { href: "/opportunities", label: "Opportunities" },
+  { href: "/forms", label: "Forms" },
 ];
 
 export default async function AppLayout({

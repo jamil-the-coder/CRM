@@ -23,11 +23,13 @@ model Tenant {
   plan      String   @default("trial")
   createdAt DateTime @default(now()) @map("created_at")
 
-  users         User[]
-  contacts      Contact[]
-  leads         Lead[]
-  opportunities Opportunity[]
-  activities    Activity[]
+  users           User[]
+  contacts        Contact[]
+  leads           Lead[]
+  opportunities   Opportunity[]
+  activities      Activity[]
+  forms           Form[]
+  formSubmissions FormSubmission[]
 
   @@map("tenants")
 }
@@ -93,10 +95,11 @@ model Lead {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  contact       Contact       @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  owner         User?         @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
-  opportunities Opportunity[]
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact         Contact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  owner           User?            @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  opportunities   Opportunity[]
+  formSubmissions FormSubmission[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -143,4 +146,39 @@ model Activity {
   @@index([tenantId])
   @@index([tenantId, entityType, entityId])
   @@map("activities")
+}
+
+model Form {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  fields    Json
+  embedKey  String   @unique @map("embed_key")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  submissions FormSubmission[]
+
+  @@index([tenantId])
+  @@map("forms")
+}
+
+model FormSubmission {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  formId    String   @map("form_id")
+  payload   Json
+  status    String   @default("accepted")
+  leadId    String?  @map("lead_id")
+  ipAddress String?  @map("ip_address")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  form   Form   @relation(fields: [formId], references: [id], onDelete: Cascade)
+  lead   Lead?  @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([formId])
+  @@index([formId, ipAddress, createdAt])
+  @@map("form_submissions")
 }
