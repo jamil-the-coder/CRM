@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/api-auth";
 import { logActivity } from "@/lib/activity";
+import { emitEvent } from "@/lib/webhooks";
 
 const createOpportunitySchema = z.object({
   contactId: z.string().min(1),
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
       stage: opportunity.stage,
     },
   );
+  await emitEvent(tenantId, "opportunity.created", { opportunity });
 
   return NextResponse.json({ opportunity }, { status: 201 });
 }

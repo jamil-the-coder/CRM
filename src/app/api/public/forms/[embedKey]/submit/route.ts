@@ -6,6 +6,7 @@ import { logActivity } from "@/lib/activity";
 import { computeDedupeKey, findDuplicateContacts } from "@/lib/dedupe";
 import { HONEYPOT_FIELD_NAME } from "@/lib/forms";
 import { getClientIp, isFormSubmissionRateLimited } from "@/lib/rate-limit";
+import { emitEvent } from "@/lib/webhooks";
 
 const submissionSchema = z.object({
   firstName: z.string().trim().min(1).max(200),
@@ -91,6 +92,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   await logActivity(form.tenantId, "lead", lead.id, "form.submitted", {
     formId: form.id,
     possibleDuplicates: duplicates.map((d) => d.id),
+  });
+  await emitEvent(form.tenantId, "lead.created", { lead });
+  await emitEvent(form.tenantId, "form.submitted", {
+    formId: form.id,
+    formName: form.name,
+    lead,
   });
 
   await db.formSubmission.create({

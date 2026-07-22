@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: "/leads", label: "Leads" },
   { href: "/opportunities", label: "Opportunities" },
   { href: "/forms", label: "Forms" },
+  { href: "/webhooks", label: "Webhooks" },
 ];
 
 export default async function AppLayout({

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/api-auth";
 import { logActivity } from "@/lib/activity";
+import { emitEvent } from "@/lib/webhooks";
 
 const updateOpportunitySchema = z.object({
   name: z.string().trim().min(1).max(300).optional(),
@@ -83,6 +84,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         to: opportunity.stage,
       },
     );
+    await emitEvent(tenantId, "opportunity.stage_changed", {
+      opportunity,
+      from: existing.stage,
+      to: opportunity.stage,
+    });
     if (opportunity.stage === "closed_won") {
       await logActivity(
         tenantId,
@@ -91,6 +97,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         "opportunity.closed_won",
         {},
       );
+      await emitEvent(tenantId, "opportunity.closed_won", { opportunity });
     } else if (opportunity.stage === "closed_lost") {
       await logActivity(
         tenantId,
@@ -99,6 +106,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         "opportunity.closed_lost",
         {},
       );
+      await emitEvent(tenantId, "opportunity.closed_lost", { opportunity });
     }
   }
 

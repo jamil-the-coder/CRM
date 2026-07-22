@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/api-auth";
 import { logActivity } from "@/lib/activity";
+import { emitEvent } from "@/lib/webhooks";
 
 const updateLeadSchema = z.object({
   status: z.string().trim().min(1).max(100).optional(),
@@ -54,7 +55,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       from: existing.status,
       to: lead.status,
     });
+    await emitEvent(tenantId, "lead.status_changed", {
+      lead,
+      from: existing.status,
+      to: lead.status,
+    });
   }
+  await emitEvent(tenantId, "lead.updated", { lead });
 
   return NextResponse.json({ lead });
 }

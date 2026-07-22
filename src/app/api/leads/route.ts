@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/api-auth";
 import { logActivity } from "@/lib/activity";
+import { emitEvent } from "@/lib/webhooks";
 
 const createLeadSchema = z.object({
   contactId: z.string().min(1),
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
   await logActivity(tenantId, "lead", lead.id, "lead.created", {
     source: lead.source,
   });
+  await emitEvent(tenantId, "lead.created", { lead });
 
   return NextResponse.json({ lead }, { status: 201 });
 }
