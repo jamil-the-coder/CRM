@@ -182,6 +182,24 @@
 - Committed as `Phase 7: webhooks out [verified]` and pushed to `origin/main`.
 - **Next phase:** Phase 8 — Public API in (n8n-facing): per-tenant API keys, REST endpoints for leads/contacts/opportunities/activities/call bookings, OpenAPI spec.
 
+### Phase 8 — Public API in (n8n-facing) — **DONE**
+
+- Added `ApiKey` (per-tenant, only a SHA-256 hash stored; the plaintext key is generated once and never persisted).
+- Built the full `/api/v1/*` REST surface: create/read/update on contacts, leads, opportunities, and activities — reusing the exact tenant-scoping pattern (`findFirst({ where: { id, tenantId } })`, 404 not 403 for cross-tenant access) and the same Activity-log + webhook-event wiring already proven in Phases 4 and 7, so data written via n8n behaves identically to data written through the UI.
+- No `DELETE` on this API by design — matches `PLAN.md`'s "create/read/update" scope; deleting stays a human/admin action in the CRM itself.
+- Built an authenticated **API Keys** page: create a key (shown once, with an explicit "copy now" warning), see existing keys by name/prefix/last-used, nothing else ever exposes the plaintext key again.
+- Shipped `openapi.yaml` (a real OpenAPI 3.0 document, importable directly into n8n's HTTP Request node) and `API.md` — the auth setup, endpoint table, a worked request/response example, and the error-shape/rate-limit notes, written for the non-technical operator to hand to whoever sets up the n8n side.
+- **Verified (all passing):**
+  - `npm run test` — 45/45 (up from 40): missing/invalid API key rejected, the full contact→lead→opportunity(→closed_won)→activity lifecycle driven entirely through a bearer API key, tenant isolation (key from tenant A gets 404 on tenant B's contact), and API key create/list/delete with an explicit assertion that the plaintext key never appears anywhere in the list response.
+  - `npm run lint`, `npx tsc --noEmit`, `npm run build` — clean.
+  - A real Playwright run through the API Keys page: created a key, saw the one-time reveal screen, confirmed it appears afterward in the list with metadata only.
+- **DECISIONS:**
+  - Call-booking endpoints for this API are deferred to Phase 9, alongside the `CalendarProvider` interface they depend on — not an oversight, just sequencing (can't expose an API for something that doesn't exist yet).
+  - Rate limiting isn't enforced on `/api/v1/*` yet — explicitly noted in `API.md` as covered by the Phase 17 hardening pass, not silently skipped.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 8: public API in (n8n-facing) + OpenAPI [verified]` and pushed to `origin/main`.
+- **Next phase:** Phase 9 — Calendar integration interface (`CalendarProvider` interface + `MockCalendarProvider`, `CallBooking` model, booking endpoint, `call.booked` event).
+
 ---
 
 ## STUCK
