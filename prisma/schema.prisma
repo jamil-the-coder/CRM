@@ -45,6 +45,7 @@ model Tenant {
   notes                  Note[]
   emailLogs              EmailLog[]
   attachments            Attachment[]
+  tasks                  Task[]
 
   @@map("tenants")
 }
@@ -79,6 +80,7 @@ model User {
   ownedLeads         Lead[]        @relation("LeadOwner")
   ownedOpportunities Opportunity[] @relation("OpportunityOwner")
   notes              Note[]
+  tasks              Task[]
 
   @@map("users")
 }
@@ -523,4 +525,27 @@ model Attachment {
 
   @@index([tenantId, entityType, entityId])
   @@map("attachments")
+}
+
+// Tasks/to-dos (Phase 24) — optionally linked to a record (entityType/
+// entityId, nullable so a task can be standalone), always owned by exactly
+// one user. "My tasks" is just this table filtered to ownerUserId = caller.
+model Task {
+  id          String    @id @default(cuid())
+  tenantId    String    @map("tenant_id")
+  title       String
+  dueDate     DateTime? @map("due_date")
+  ownerUserId String    @map("owner_user_id")
+  entityType  String?   @map("entity_type")
+  entityId    String?   @map("entity_id")
+  status      String    @default("open") // "open" | "done"
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  owner  User   @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, ownerUserId, status])
+  @@index([tenantId, entityType, entityId])
+  @@map("tasks")
 }

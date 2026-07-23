@@ -463,6 +463,21 @@ The gap analysis's single biggest finding, closed: Contact, Lead, and Opportunit
 - Committed as `Phase 23: file attachments [verified]` and pushed to `origin/main`.
 - **Next:** Phase 24 — tasks/to-dos.
 
+### Phase 24 — Tasks/to-dos — **DONE**
+
+- Added `Task` (`title`, `dueDate`, `ownerUserId` — required, defaults to the creating user — optional `entityType`/`entityId` link, `status` open/done, `completedAt`).
+- **Refactored the repeated "does this entityType/entityId belong to this tenant" check** (previously duplicated separately in tags, notes, and attachments) into one shared `src/lib/polymorphic-entity.ts` (`CRM_ENTITY_TYPES`, `crmEntityBelongsToTenant`) before adding a fourth copy for tasks — `attachments.ts`'s old names are kept as re-exports so nothing else needed to change. A small but real bit of consolidation, done at the point a 4th duplicate would have made the pattern worse, not before.
+- API: `GET/POST /api/tasks` (supports `?mine=1`, `?entityType=&entityId=`, `?status=` filters) and `PATCH/DELETE /api/tasks/:id` — marking a task `done` stamps `completedAt`, reopening it clears that stamp.
+- **UI:** a "My Tasks" page (open tasks first, a due-date pill that turns into a red "Overdue: <date>" badge once the date has passed and the task is still open, a collapsed "Done" section below) plus a reusable `RecordTasksSection` (quick-add + toggle-done list) wired onto all four detail pages, same pattern as Attachments.
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 113/113 (added `tasks.test.ts`: creation defaults ownership to the caller, done/reopen round-trip correctly stamping and clearing `completedAt`, record-linked task filtering, unauthenticated rejection, tenant isolation on update/delete, and cross-tenant `entityId` rejection). `npm run build` — clean.
+- A real Playwright pass: created a task with a past due date on the My Tasks page and confirmed the overdue badge renders correctly, marked it done and confirmed it moves to the Done section, then added a task directly from a Contact's detail page and confirmed it shows up there too.
+- **DECISIONS:**
+  - No owner-picker UI yet on the task-creation forms — every task defaults to its creator. Folds naturally into Phase 25 (which is building the owner-picker UI pattern generally for Contact/Account, and could extend it here too) rather than building a one-off picker now.
+  - `Task.owner` cascades on user deletion (like `Session`) rather than `SetNull` (like `Note.author`) — there's no user-deactivation flow yet (that's Phase 29), so this hasn't been exercised in practice; worth revisiting once Phase 29 makes user removal a real, reachable action.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 24: tasks/to-dos [verified]` and pushed to `origin/main`.
+- **Next:** Phase 25 — record ownership completion (`ownerId` on Contact/Account, an owner picker, "my records" filters).
+
 ---
 
 ## STUCK

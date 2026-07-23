@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RecordTimeline } from "@/components/record-timeline";
 import { AddNoteForm } from "@/components/add-note-form";
 import { AttachmentsSection } from "@/components/attachments-section";
+import { RecordTasksSection } from "@/components/record-tasks-section";
 import { tagColorClassName } from "@/lib/tag-colors";
 
 export default async function LeadDetailPage({
@@ -26,12 +27,16 @@ export default async function LeadDetailPage({
   });
   if (!lead) notFound();
 
-  const [timeline, tagsByEntity, attachments] = await Promise.all([
+  const [timeline, tagsByEntity, attachments, tasks] = await Promise.all([
     getTimeline(tenantId, "lead", id),
     getTagsForEntities(tenantId, "lead", [id]),
     db.attachment.findMany({
       where: { tenantId, entityType: "lead", entityId: id },
       orderBy: { createdAt: "desc" },
+    }),
+    db.task.findMany({
+      where: { tenantId, entityType: "lead", entityId: id },
+      orderBy: [{ status: "asc" }, { dueDate: "asc" }],
     }),
   ]);
   const tags = tagsByEntity[id] ?? [];
@@ -80,6 +85,11 @@ export default async function LeadDetailPage({
         </CardContent>
       </Card>
 
+      <RecordTasksSection
+        entityType="lead"
+        entityId={id}
+        tasks={tasks.map((t) => ({ ...t, dueDate: t.dueDate?.toISOString() ?? null }))}
+      />
       <AttachmentsSection
         entityType="lead"
         entityId={id}

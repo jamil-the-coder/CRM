@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RecordTimeline } from "@/components/record-timeline";
 import { AddNoteForm } from "@/components/add-note-form";
 import { AttachmentsSection } from "@/components/attachments-section";
+import { RecordTasksSection } from "@/components/record-tasks-section";
 import { tagColorClassName } from "@/lib/tag-colors";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -32,13 +33,17 @@ export default async function OpportunityDetailPage({
   });
   if (!opportunity) notFound();
 
-  const [timeline, customFields, tagsByEntity, attachments] = await Promise.all([
+  const [timeline, customFields, tagsByEntity, attachments, tasks] = await Promise.all([
     getTimeline(tenantId, "opportunity", id),
     getFieldValues(tenantId, "opportunity", id),
     getTagsForEntities(tenantId, "opportunity", [id]),
     db.attachment.findMany({
       where: { tenantId, entityType: "opportunity", entityId: id },
       orderBy: { createdAt: "desc" },
+    }),
+    db.task.findMany({
+      where: { tenantId, entityType: "opportunity", entityId: id },
+      orderBy: [{ status: "asc" }, { dueDate: "asc" }],
     }),
   ]);
   const tags = tagsByEntity[id] ?? [];
@@ -102,6 +107,11 @@ export default async function OpportunityDetailPage({
         </CardContent>
       </Card>
 
+      <RecordTasksSection
+        entityType="opportunity"
+        entityId={id}
+        tasks={tasks.map((t) => ({ ...t, dueDate: t.dueDate?.toISOString() ?? null }))}
+      />
       <AttachmentsSection
         entityType="opportunity"
         entityId={id}

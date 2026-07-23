@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { CRM_ENTITY_TYPES, crmEntityBelongsToTenant } from "@/lib/polymorphic-entity";
 
 export const MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
@@ -21,30 +21,8 @@ export const ALLOWED_ATTACHMENT_CONTENT_TYPES = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ];
 
-export const ATTACHMENT_ENTITY_TYPES = [
-  "contact",
-  "account",
-  "lead",
-  "opportunity",
-] as const;
-
-export async function attachmentEntityBelongsToTenant(
-  entityType: string,
-  entityId: string,
-  tenantId: string,
-): Promise<boolean> {
-  switch (entityType) {
-    case "contact":
-      return Boolean(await db.contact.findFirst({ where: { id: entityId, tenantId } }));
-    case "account":
-      return Boolean(await db.account.findFirst({ where: { id: entityId, tenantId } }));
-    case "lead":
-      return Boolean(await db.lead.findFirst({ where: { id: entityId, tenantId } }));
-    case "opportunity":
-      return Boolean(
-        await db.opportunity.findFirst({ where: { id: entityId, tenantId } }),
-      );
-    default:
-      return false;
-  }
-}
+// Re-exported for callers that imported these names from here before the
+// shared polymorphic-entity module existed — attachments were the first
+// feature to need cross-entity-type validation.
+export const ATTACHMENT_ENTITY_TYPES = CRM_ENTITY_TYPES;
+export const attachmentEntityBelongsToTenant = crmEntityBelongsToTenant;

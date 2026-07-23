@@ -11,6 +11,7 @@ import { RecordTimeline } from "@/components/record-timeline";
 import { AddNoteForm } from "@/components/add-note-form";
 import { LogEmailForm } from "@/components/log-email-form";
 import { AttachmentsSection } from "@/components/attachments-section";
+import { RecordTasksSection } from "@/components/record-tasks-section";
 import { tagColorClassName } from "@/lib/tag-colors";
 
 export default async function ContactDetailPage({
@@ -28,13 +29,17 @@ export default async function ContactDetailPage({
   });
   if (!contact) notFound();
 
-  const [timeline, customFields, tagsByEntity, attachments] = await Promise.all([
+  const [timeline, customFields, tagsByEntity, attachments, tasks] = await Promise.all([
     getTimeline(tenantId, "contact", id),
     getFieldValues(tenantId, "contact", id),
     getTagsForEntities(tenantId, "contact", [id]),
     db.attachment.findMany({
       where: { tenantId, entityType: "contact", entityId: id },
       orderBy: { createdAt: "desc" },
+    }),
+    db.task.findMany({
+      where: { tenantId, entityType: "contact", entityId: id },
+      orderBy: [{ status: "asc" }, { dueDate: "asc" }],
     }),
   ]);
   const tags = tagsByEntity[id] ?? [];
@@ -94,6 +99,11 @@ export default async function ContactDetailPage({
         </CardContent>
       </Card>
 
+      <RecordTasksSection
+        entityType="contact"
+        entityId={id}
+        tasks={tasks.map((t) => ({ ...t, dueDate: t.dueDate?.toISOString() ?? null }))}
+      />
       <AttachmentsSection
         entityType="contact"
         entityId={id}
