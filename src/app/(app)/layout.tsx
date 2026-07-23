@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: "/leads", label: "Leads" },
   { href: "/opportunities", label: "Opportunities" },
   { href: "/invoices", label: "Invoices" },
+  { href: "/products", label: "Products" },
   { href: "/calls", label: "Calls" },
   { href: "/forms", label: "Forms" },
   { href: "/webhooks", label: "Webhooks" },

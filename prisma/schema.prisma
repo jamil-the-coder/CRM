@@ -46,6 +46,7 @@ model Tenant {
   emailLogs              EmailLog[]
   attachments            Attachment[]
   tasks                  Task[]
+  products               Product[]
 
   @@map("tenants")
 }
@@ -554,4 +555,23 @@ model Task {
   @@index([tenantId, ownerUserId, status])
   @@index([tenantId, entityType, entityId])
   @@map("tasks")
+}
+
+// Minimal per-tenant product catalog (Phase 26) — feeds Quote line items
+// (Phase 27). Deliberately no inventory/variants/tax rules; just enough to
+// price a line item consistently instead of free-typing it every time.
+model Product {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  sku       String?
+  unitPrice Decimal  @db.Decimal(12, 2) @map("unit_price")
+  currency  String   @default("USD")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("products")
 }

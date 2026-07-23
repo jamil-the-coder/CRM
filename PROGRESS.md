@@ -495,6 +495,17 @@ Closes the gap-analysis finding: `Lead.ownerUserId`/`Opportunity.ownerUserId` ex
 - Committed as `Phase 25: record ownership completion [verified]` and pushed to `origin/main`.
 - **Next:** Phase 26 — products & price list.
 
+### Phase 26 — Products & price list — **DONE**
+
+- Added `Product` (`name`, optional `sku`, `unitPrice`, `currency`, `active`) — deliberately minimal, no inventory/variants/tax rules, matching the addendum's exact scope. No relation to Quote yet on purpose — that FK gets added in Phase 27 alongside the `QuoteLine` model, so this migration stands on its own rather than reaching forward into a model that doesn't exist yet.
+- `GET/POST /api/products` (supports `?active=1`) and `PATCH/DELETE /api/products/:id`.
+- **UI:** a Products page — create form, list with an active/inactive toggle badge (click to flip).
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 119/119 (added `products.test.ts`: CRUD, the `?active=1` filter correctly excluding a deactivated product, unauthenticated rejection, tenant isolation on update/delete). `npm run build` — clean.
+- A real Playwright pass: created a product with a SKU and price, confirmed it lists correctly formatted as currency, toggled it inactive and confirmed the badge updates.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 26: products & price list [verified]` and pushed to `origin/main`.
+- **Next:** Phase 27 — quotes (depends on Products for line items).
+
 ---
 
 ## STUCK
