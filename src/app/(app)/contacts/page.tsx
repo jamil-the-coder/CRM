@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
@@ -83,8 +84,8 @@ export default async function ContactsPage({
                 key={contact.id}
                 className="flex items-center justify-between gap-4 px-4 py-3"
               >
-                <div>
-                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                <Link href={`/contacts/${contact.id}`} className="group">
+                  <p className="text-sm font-medium text-zinc-900 group-hover:underline dark:text-zinc-50">
                     {contact.firstName} {contact.lastName ?? ""}
                   </p>
                   <p className="text-xs text-zinc-500">
@@ -92,7 +93,7 @@ export default async function ContactsPage({
                       .filter(Boolean)
                       .join(" · ") || "No details yet"}
                   </p>
-                </div>
+                </Link>
                 <div className="flex items-center gap-2">
                   {contact.account && (
                     <Badge variant="secondary">{contact.account.name}</Badge>

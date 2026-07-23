@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
 type Stage = { key: string; label: string; isWon: boolean; isLost: boolean };
@@ -112,9 +113,13 @@ export function KanbanBoard({
                       draggingId === card.id ? "opacity-50" : ""
                     }`}
                   >
-                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                    <Link
+                      href={`/opportunities/${card.id}`}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      className="text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-50"
+                    >
                       {card.name}
-                    </p>
+                    </Link>
                     <p className="text-xs text-zinc-500">
                       {card.contactName} ·{" "}
                       {currencyFormatter.format(Number(card.value))}

@@ -42,6 +42,7 @@ model Tenant {
   customFieldValues      CustomFieldValue[]
   tags                   Tag[]
   tagAssignments         TagAssignment[]
+  notes                  Note[]
 
   @@map("tenants")
 }
@@ -75,6 +76,7 @@ model User {
   sessions           Session[]
   ownedLeads         Lead[]        @relation("LeadOwner")
   ownedOpportunities Opportunity[] @relation("OpportunityOwner")
+  notes              Note[]
 
   @@map("users")
 }
@@ -452,4 +454,25 @@ model TagAssignment {
   @@unique([tagId, entityId])
   @@index([tenantId, entityType, entityId])
   @@map("tag_assignments")
+}
+
+// Freeform, timestamped notes on a record — merged with Activity into the
+// unified per-record timeline (Phase 21). Same polymorphic entityType/
+// entityId convention as Activity/CustomFieldDefinition/TagAssignment.
+// authorUserId is SetNull (not Cascade) on user deletion, same reasoning as
+// AuditLog: a note's content should survive the author leaving the tenant.
+model Note {
+  id           String   @id @default(cuid())
+  tenantId     String   @map("tenant_id")
+  entityType   String   @map("entity_type")
+  entityId     String   @map("entity_id")
+  authorUserId String?  @map("author_user_id")
+  body         String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  author User?  @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, entityType, entityId])
+  @@map("notes")
 }

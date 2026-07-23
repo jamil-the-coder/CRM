@@ -417,6 +417,24 @@ Ran the one-time v1 completeness audit the addendum asked for, against its check
 - Committed as `Phase 20: tags/labels [verified]` and pushed to `origin/main`.
 - **Next:** Phase 21 — record detail pages + notes + unified timeline (the biggest remaining gap: Contact/Lead/Opportunity have no detail page at all yet).
 
+### Phase 21 — Record detail pages + notes + unified timeline — **DONE**
+
+The gap analysis's single biggest finding, closed: Contact, Lead, and Opportunity previously had no detail page at all (flat list / Kanban-only), so the `Activity` timeline — correctly written to since Phase 4 — had nowhere to be shown to a user.
+
+- Added `Note` (freeform, timestamped, `authorUserId` — `SetNull` on user deletion, same reasoning as `AuditLog`: content survives the author leaving). Same polymorphic `entityType`/`entityId` convention as `Activity`/`CustomFieldDefinition`/`TagAssignment`.
+- `src/lib/timeline.ts`: `getTimeline()` merges `Activity` + `Note` rows for a record into one array sorted descending by `createdAt` — the actual "unified" part; a plain query per source would've left the operator manually interleaving two separate feeds.
+- `POST /api/notes` (session-authed), validating the target entity belongs to the caller's tenant before creating the note (same switch-over-entityType pattern as Phase 20's tag-assignment check).
+- **New detail pages:** `/contacts/[id]`, `/leads/[id]`, `/opportunities/[id]` (Kanban stays as the primary Opportunities view; each card's name is now a link to its detail page, `stopPropagation` on the link's `onMouseDown` so it doesn't fight the card's drag handler) — plus the existing `/accounts/[id]` (Phase 18) retrofitted with the same treatment. Every one shows: core fields, linked records (contact↔account↔opportunity, cross-linked), custom field values (Phase 19) and tags (Phase 20) if any are set, an `AddNoteForm`, and the merged `RecordTimeline`. Two new shared components (`add-note-form.tsx`, `record-timeline.tsx`) so all four pages render identically rather than four divergent implementations.
+- Made every list page's rows link to their new detail page: Contacts, Leads, Account's child Contacts/Opportunities. Kanban cards link via their name.
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 98/98 (added `notes.test.ts`: note creation with author attribution, unauthenticated rejection, cross-tenant entity rejection, and a `getTimeline()` merge-ordering test proving Activity+Note rows interleave correctly by timestamp, not just get concatenated). `npm run build` — clean, all four new detail routes present.
+- A real Playwright pass: clicked through from each list into its detail page, added a note on a Contact and confirmed it appeared in the timeline immediately, confirmed the Opportunity detail page (reached via a Kanban card click) shows its `opportunity.created` Activity entry correctly humanized, and confirmed the Account detail retrofit (created a fresh account, since the Phase 16 demo seed predates Accounts and has none — added one via the UI, not a bug) shows notes/timeline correctly too. Screenshots judged against the UI bar: identical Card-based layout across all four pages, consistent cross-links, no visual defects.
+- **DECISIONS:**
+  - Activity payload formatting in the timeline is deliberately minimal (a generic `from → to` renderer for stage-change-shaped payloads, otherwise just a humanized type label) rather than a per-event-type formatter for all ~15 event types — matches the "don't over-engineer" standing guidance; can be extended per-type later if a specific event's raw payload proves confusing in practice.
+  - No detail page for the demo seed's other entities beyond what already existed (Forms/Webhooks/API Keys/Invoices/Calls) — out of scope for this phase, which was specifically the CRM-core-record gap the audit flagged.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 21: record detail pages + notes + unified timeline [verified]` and pushed to `origin/main`.
+- **Next:** Phase 22 — email logging (manual "Log an email" action on a Contact, feeding the same timeline).
+
 ---
 
 ## STUCK

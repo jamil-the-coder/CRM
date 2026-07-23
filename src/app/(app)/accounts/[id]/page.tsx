@@ -1,8 +1,15 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getTimeline } from "@/lib/timeline";
+import { getFieldValues } from "@/lib/custom-fields";
+import { getTagsForEntities } from "@/lib/tags";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { RecordTimeline } from "@/components/record-timeline";
+import { AddNoteForm } from "@/components/add-note-form";
+import { tagColorClassName } from "@/lib/tag-colors";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -16,15 +23,23 @@ export default async function AccountDetailPage({
 }) {
   const { id } = await params;
   const user = await getCurrentUser();
+  const tenantId = user!.tenantId;
 
   const account = await db.account.findFirst({
-    where: { id, tenantId: user!.tenantId },
+    where: { id, tenantId },
     include: {
       contacts: { orderBy: { createdAt: "desc" } },
       opportunities: { orderBy: { createdAt: "desc" } },
     },
   });
   if (!account) notFound();
+
+  const [timeline, customFields, tagsByEntity] = await Promise.all([
+    getTimeline(tenantId, "account", id),
+    getFieldValues(tenantId, "account", id),
+    getTagsForEntities(tenantId, "account", [id]),
+  ]);
+  const tags = tagsByEntity[id] ?? [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -40,6 +55,34 @@ export default async function AccountDetailPage({
         </p>
       </div>
 
+      {(Object.keys(customFields).length > 0 || tags.length > 0) && (
+        <Card>
+          <CardContent className="flex flex-col gap-3 pt-6">
+            {Object.keys(customFields).length > 0 && (
+              <div className="flex flex-wrap gap-4 text-sm">
+                {Object.entries(customFields).map(([key, value]) => (
+                  <div key={key}>
+                    <p className="text-xs text-zinc-500">{key}</p>
+                    <p className="font-medium text-zinc-900 dark:text-zinc-50">
+                      {value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {tags.map((tag) => (
+                  <Badge key={tag.id} className={tagColorClassName(tag.color)}>
+                    {tag.name}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <div>
         <h2 className="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Contacts
@@ -54,7 +97,11 @@ export default async function AccountDetailPage({
           <Card>
             <CardContent className="divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
               {account.contacts.map((contact) => (
-                <div key={contact.id} className="px-4 py-3">
+                <Link
+                  key={contact.id}
+                  href={`/contacts/${contact.id}`}
+                  className="block px-4 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                >
                   <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
                     {contact.firstName} {contact.lastName ?? ""}
                   </p>
@@ -62,7 +109,7 @@ export default async function AccountDetailPage({
                     {[contact.email, contact.phone].filter(Boolean).join(" · ") ||
                       "No details yet"}
                   </p>
-                </div>
+                </Link>
               ))}
             </CardContent>
           </Card>
@@ -83,9 +130,10 @@ export default async function AccountDetailPage({
           <Card>
             <CardContent className="divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
               {account.opportunities.map((opportunity) => (
-                <div
+                <Link
                   key={opportunity.id}
-                  className="flex items-center justify-between px-4 py-3"
+                  href={`/opportunities/${opportunity.id}`}
+                  className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900"
                 >
                   <div>
                     <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
@@ -96,12 +144,15 @@ export default async function AccountDetailPage({
                     </p>
                   </div>
                   <Badge variant="secondary">{opportunity.stage}</Badge>
-                </div>
+                </Link>
               ))}
             </CardContent>
           </Card>
         )}
       </div>
+
+      <AddNoteForm entityType="account" entityId={id} />
+      <RecordTimeline entries={timeline} />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
@@ -33,9 +34,10 @@ export default async function LeadsPage() {
         <Card>
           <CardContent className="divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
             {leads.map((lead) => (
-              <div
+              <Link
                 key={lead.id}
-                className="flex items-center justify-between px-4 py-3"
+                href={`/leads/${lead.id}`}
+                className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900"
               >
                 <div>
                   <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
@@ -44,7 +46,7 @@ export default async function LeadsPage() {
                   <p className="text-xs text-zinc-500">Source: {lead.source}</p>
                 </div>
                 <Badge variant="secondary">{lead.status}</Badge>
-              </div>
+              </Link>
             ))}
           </CardContent>
         </Card>
