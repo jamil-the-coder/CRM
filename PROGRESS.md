@@ -339,6 +339,26 @@ The last phase in the original plan (0–17).
 
 ---
 
+## Addendum — Accounts, Full CRM Gap Analysis & UI Quality Bar
+
+The operator issued an addendum extending scope beyond the original 0–17 plan: build an Accounts module immediately, then do a one-time gap-analysis audit against a checklist of common CRM features, extending the numbered phase plan for whatever's missing — plus a standing UI-quality bar applying to every phase from here on. Settled architecture (tenant-scoping pattern, session/API-key dual auth, provider-interface pattern, event contract) stays fixed; this is additive scope, not a rebuild.
+
+### Phase 18 — Accounts — **DONE**
+
+- Added `Account` (tenant-scoped: `name` + timestamps only, deliberately minimal — website/industry etc. are later additions) and optional `accountId` on both `Contact` and `Opportunity` (`onDelete: SetNull`, so deleting an account unlinks rather than deletes its contacts/opportunities). Fully additive migration (`20260723075712_add_accounts`) — nothing existing changed shape.
+- Full tenant-scoped CRUD on both surfaces: `/api/accounts` (session) and `/api/v1/accounts` (API-key, n8n-facing) — same `findFirst({ id, tenantId })`/404-not-403 pattern as every other entity. Account detail (`GET /api/accounts/:id`) returns its linked contacts and opportunities in one call.
+- `Contact` and `Opportunity` create/update (both session and v1 surfaces, 8 route files total) now accept an optional `accountId`, validated against the caller's own tenant the same way `contactId`/`leadId` already were — a cross-tenant `accountId` is rejected with 400, matching the existing convention for cross-tenant FK rejection.
+- New webhook events `account.created`/`account.updated`, added to `WebhookEventType` and wired the same way every other entity's events already work. Updated `EVENTS.md`, `API.md`, and `openapi.yaml` (validated the YAML parses and the new paths/schemas are well-formed).
+- **UI:** an Accounts nav link (placed before Contacts, as the parent concept), a list page (create form + list, same "no records yet" `Card` empty-state pattern as every other list page), and an account detail page showing its linked contacts and opportunities as two sub-lists. The Contact create form gained an **Account picker** — a new lightweight searchable-dropdown component (`src/components/account-picker.tsx`), since no combobox/select primitive existed yet in this project's component set and pulling one in for a single field wasn't judged worth it; built to be reusable if a second picker is needed later.
+- **Caught and fixed via the Playwright screenshot pass** (per the addendum's new UI-verification requirement): the account picker's dropdown was rendering but almost entirely invisible — `Card`'s `overflow-hidden` (needed elsewhere for rounded corners on images) was clipping the picker's absolutely-positioned dropdown panel. Fixed by overriding to `overflow-visible` on that one form's `Card` via `cn()`'s tailwind-merge (later class wins), rather than touching the shared `Card` component's default. This is exactly the kind of bug the addendum's screenshot requirement is meant to catch — the automated tests couldn't see it since the dropdown's *content* was correct, only its visibility was broken.
+- **Visual check against the addendum's UI bar:** passed. Reuses the exact same Card/Badge/empty-state patterns as every pre-existing list page (Contacts, Leads, etc.) rather than introducing a new layout — hierarchy is obvious (one create form, one list, one clear primary action), the new picker's affordance (hover states, clear "No account" clear option) matches existing interactive-element treatment. Did **not** touch any pre-existing screen beyond the two small, in-scope edits (nav link; Contact form/list gaining the picker and an account badge) — a broader UI consistency pass across all pre-addendum screens is scoped into the gap-analysis phase list below, not done here.
+- **Verified (all passing):** `npx tsc --noEmit` clean; `npm run lint` clean; `npm run test` — 75/75 across 22 files (added `src/app/api/accounts/accounts.test.ts` — CRUD, unauthenticated rejection, tenant isolation, cross-tenant `accountId` rejection, and an account-detail aggregation test; extended `src/app/api/v1/v1.test.ts` with the same coverage via API key); `npm run build` — clean, all new routes present. A real Playwright pass: signed up fresh, created an account, linked a contact and an opportunity to it via the UI, confirmed the account detail page aggregates both, confirmed the cross-tenant-rejection and 404 paths, and confirmed the dropdown-clipping bug was fixed with a follow-up screenshot.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 18: accounts [verified]` and pushed to `origin/main`.
+- **Next:** the operator's Outlook OAuth credentials (real Azure AD app, admin consent already granted for `Calendars.ReadWrite`/`offline_access`/`User.Read`) unblock Phase 15's Outlook side — building the real `OutlookCalendarProvider` next, then the gap-analysis audit into `PLAN.md`.
+
+---
+
 ## STUCK
 
 _(none yet)_

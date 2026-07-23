@@ -19,10 +19,18 @@ components:
       scheme: bearer
       description: A CRM API key (starts with `crm_live_`), created on the API Keys page.
   schemas:
+    Account:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
     Contact:
       type: object
       properties:
         id: { type: string }
+        accountId: { type: string, nullable: true }
         firstName: { type: string }
         lastName: { type: string, nullable: true }
         email: { type: string, nullable: true }
@@ -45,6 +53,7 @@ components:
       properties:
         id: { type: string }
         contactId: { type: string }
+        accountId: { type: string, nullable: true }
         leadId: { type: string, nullable: true }
         name: { type: string }
         stage: { type: string }
@@ -71,6 +80,72 @@ components:
       properties:
         error: { type: string }
 paths:
+  /accounts:
+    get:
+      summary: List accounts
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accounts:
+                    type: array
+                    items: { $ref: "#/components/schemas/Account" }
+    post:
+      summary: Create an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  account: { $ref: "#/components/schemas/Account" }
+        "400":
+          {
+            description: Invalid input,
+            content:
+              {
+                application/json:
+                  { schema: { $ref: "#/components/schemas/Error" } },
+              },
+          }
+  /accounts/{id}:
+    get:
+      summary: Get an account, including its linked contacts and opportunities
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: OK }
+        "404": { description: Not found }
+    patch:
+      summary: Update an account
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+      responses:
+        "200": { description: OK }
+        "404": { description: Not found }
   /contacts:
     get:
       summary: List contacts
@@ -100,6 +175,12 @@ paths:
                 email: { type: string }
                 phone: { type: string }
                 company: { type: string }
+                accountId:
+                  {
+                    type: string,
+                    nullable: true,
+                    description: "Must belong to the same tenant",
+                  }
       responses:
         "201":
           description: Created
@@ -145,6 +226,7 @@ paths:
                 email: { type: string, nullable: true }
                 phone: { type: string, nullable: true }
                 company: { type: string, nullable: true }
+                accountId: { type: string, nullable: true }
       responses:
         "200": { description: OK }
         "404": { description: Not found }
@@ -232,6 +314,7 @@ paths:
               properties:
                 contactId: { type: string }
                 leadId: { type: string, nullable: true }
+                accountId: { type: string, nullable: true }
                 name: { type: string }
                 stage: { type: string }
                 value: { type: number }
@@ -275,6 +358,7 @@ paths:
                 currency: { type: string }
                 probability: { type: integer }
                 ownerUserId: { type: string, nullable: true }
+                accountId: { type: string, nullable: true }
                 expectedCloseDate:
                   { type: string, format: date-time, nullable: true }
       responses:

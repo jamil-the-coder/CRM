@@ -12,6 +12,7 @@ const updateOpportunitySchema = z.object({
   currency: z.string().trim().length(3).optional(),
   probability: z.number().int().min(0).max(100).optional(),
   ownerUserId: z.string().min(1).nullable().optional(),
+  accountId: z.string().min(1).nullable().optional(),
   expectedCloseDate: z.string().datetime().nullable().optional(),
 });
 
@@ -50,6 +51,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const existing = await db.opportunity.findFirst({ where: { id, tenantId } });
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (parsed.data.accountId) {
+    const account = await db.account.findFirst({
+      where: { id: parsed.data.accountId, tenantId },
+    });
+    if (!account) {
+      return NextResponse.json(
+        { error: "accountId does not belong to this tenant" },
+        { status: 400 },
+      );
+    }
   }
 
   const { expectedCloseDate, ...rest } = parsed.data;

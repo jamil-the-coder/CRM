@@ -22,6 +22,11 @@ import {
   GET as listActivities,
   POST as createActivity,
 } from "./activities/route";
+import { GET as listAccounts, POST as createAccount } from "./accounts/route";
+import {
+  GET as getAccount,
+  PATCH as updateAccount,
+} from "./accounts/[id]/route";
 
 const createdTenantIds: string[] = [];
 
@@ -173,6 +178,77 @@ describe("v1 contacts/leads/opportunities/activities", () => {
     );
     const listActivitiesBody = await listActivitiesResponse.json();
     expect(listActivitiesBody.activities.length).toBeGreaterThan(0);
+  });
+
+  it("supports account create/read/update and linking a contact/opportunity to it via an API key", async () => {
+    const tenant = await createTestTenant("v1Accounts");
+    createdTenantIds.push(tenant.tenantId);
+    const apiKey = await createTestApiKey(tenant.tenantId);
+
+    const accountResponse = await createAccount(
+      apiKeyRequest("/api/v1/accounts", {
+        method: "POST",
+        apiKey,
+        body: { name: "n8n Test Co" },
+      }),
+    );
+    expect(accountResponse.status).toBe(201);
+    const { account } = await accountResponse.json();
+
+    const listAccountsResponse = await listAccounts(
+      apiKeyRequest("/api/v1/accounts", { method: "GET", apiKey }),
+    );
+    const listAccountsBody = await listAccountsResponse.json();
+    expect(
+      listAccountsBody.accounts.some((a: { id: string }) => a.id === account.id),
+    ).toBe(true);
+
+    const updateResponse = await updateAccount(
+      apiKeyRequest(`/api/v1/accounts/${account.id}`, {
+        method: "PATCH",
+        apiKey,
+        body: { name: "n8n Test Co (renamed)" },
+      }),
+      { params: Promise.resolve({ id: account.id }) },
+    );
+    expect((await updateResponse.json()).account.name).toBe(
+      "n8n Test Co (renamed)",
+    );
+
+    const contactResponse = await createContact(
+      apiKeyRequest("/api/v1/contacts", {
+        method: "POST",
+        apiKey,
+        body: { firstName: "Linked", accountId: account.id },
+      }),
+    );
+    expect(contactResponse.status).toBe(201);
+    const { contact } = await contactResponse.json();
+
+    const opportunityResponse = await createOpportunity(
+      apiKeyRequest("/api/v1/opportunities", {
+        method: "POST",
+        apiKey,
+        body: {
+          contactId: contact.id,
+          accountId: account.id,
+          name: "n8n Account Deal",
+          value: 2000,
+        },
+      }),
+    );
+    expect(opportunityResponse.status).toBe(201);
+
+    const detailResponse = await getAccount(
+      apiKeyRequest(`/api/v1/accounts/${account.id}`, {
+        method: "GET",
+        apiKey,
+      }),
+      { params: Promise.resolve({ id: account.id }) },
+    );
+    const detail = await detailResponse.json();
+    expect(detail.account.contacts.length).toBe(1);
+    expect(detail.account.opportunities.length).toBe(1);
   });
 
   it("isolates tenants: an API key from tenant A cannot read tenant B's contact", async () => {

@@ -11,6 +11,7 @@ const createContactSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(320).optional(),
   phone: z.string().trim().max(50).optional(),
   company: z.string().trim().max(200).optional(),
+  accountId: z.string().min(1).optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -39,6 +40,19 @@ export async function POST(request: NextRequest) {
   }
 
   const { tenantId } = auth;
+
+  if (parsed.data.accountId) {
+    const account = await db.account.findFirst({
+      where: { id: parsed.data.accountId, tenantId },
+    });
+    if (!account) {
+      return NextResponse.json(
+        { error: "accountId does not belong to this tenant" },
+        { status: 400 },
+      );
+    }
+  }
+
   const duplicates = await findDuplicateContacts(tenantId, parsed.data);
   const contact = await db.contact.create({
     data: {

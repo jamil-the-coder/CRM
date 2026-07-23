@@ -1,14 +1,23 @@
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { NewContactForm } from "./new-contact-form";
 
 export default async function ContactsPage() {
   const user = await getCurrentUser();
-  const contacts = await db.contact.findMany({
-    where: { tenantId: user!.tenantId },
-    orderBy: { createdAt: "desc" },
-  });
+  const [contacts, accounts] = await Promise.all([
+    db.contact.findMany({
+      where: { tenantId: user!.tenantId },
+      orderBy: { createdAt: "desc" },
+      include: { account: true },
+    }),
+    db.account.findMany({
+      where: { tenantId: user!.tenantId },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -21,7 +30,7 @@ export default async function ContactsPage() {
         </p>
       </div>
 
-      <NewContactForm />
+      <NewContactForm accounts={accounts} />
 
       {contacts.length === 0 ? (
         <Card>
@@ -47,6 +56,9 @@ export default async function ContactsPage() {
                       .join(" · ") || "No details yet"}
                   </p>
                 </div>
+                {contact.account && (
+                  <Badge variant="secondary">{contact.account.name}</Badge>
+                )}
               </div>
             ))}
           </CardContent>

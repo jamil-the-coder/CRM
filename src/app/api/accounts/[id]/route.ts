@@ -2,15 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/api-auth";
-import { computeDedupeKey } from "@/lib/dedupe";
+import { emitEvent } from "@/lib/webhooks";
 
-const updateContactSchema = z.object({
-  firstName: z.string().trim().min(1).max(200).optional(),
-  lastName: z.string().trim().max(200).nullable().optional(),
-  email: z.string().trim().toLowerCase().email().max(320).nullable().optional(),
-  phone: z.string().trim().max(50).nullable().optional(),
-  company: z.string().trim().max(200).nullable().optional(),
-  accountId: z.string().min(1).nullable().optional(),
+const updateAccountSchema = z.object({
+  name: z.string().trim().min(1).max(200).optional(),
 });
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -20,13 +15,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   if (auth.unauthorized) return auth.unauthorized;
   const { id } = await params;
 
-  const contact = await db.contact.findFirst({
+  const account = await db.account.findFirst({
     where: { id, tenantId: auth.user.tenantId },
+    include: {
+      contacts: { orderBy: { createdAt: "desc" } },
+      opportunities: { orderBy: { createdAt: "desc" } },
+    },
   });
-  if (!contact) {
+  if (!account) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  return NextResponse.json({ contact });
+  return NextResponse.json({ account });
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
@@ -35,7 +34,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
 
   const body = await request.json().catch(() => null);
-  const parsed = updateContactSchema.safeParse(body);
+  const parsed = updateAccountSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Invalid input", details: parsed.error.flatten().fieldErrors },
@@ -43,34 +42,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     );
   }
 
-  const existing = await db.contact.findFirst({
+  const existing = await db.account.findFirst({
     where: { id, tenantId: auth.user.tenantId },
   });
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (parsed.data.accountId) {
-    const account = await db.account.findFirst({
-      where: { id: parsed.data.accountId, tenantId: auth.user.tenantId },
-    });
-    if (!account) {
-      return NextResponse.json(
-        { error: "accountId does not belong to this tenant" },
-        { status: 400 },
-      );
-    }
-  }
+  const account = await db.account.update({ where: { id }, data: parsed.data });
+  await emitEvent(auth.user.tenantId, "account.updated", { account });
 
-  const merged = { ...existing, ...parsed.data };
-  const contact = await db.contact.update({
-    where: { id },
-    data: {
-      ...parsed.data,
-      dedupeKey: computeDedupeKey(merged),
-    },
-  });
-  return NextResponse.json({ contact });
+  return NextResponse.json({ account });
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
@@ -78,13 +60,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   if (auth.unauthorized) return auth.unauthorized;
   const { id } = await params;
 
-  const existing = await db.contact.findFirst({
+  const existing = await db.account.findFirst({
     where: { id, tenantId: auth.user.tenantId },
   });
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  await db.contact.delete({ where: { id } });
+  await db.account.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

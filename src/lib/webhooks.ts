@@ -24,7 +24,9 @@ export type WebhookEventType =
   | "opportunity.closed_won"
   | "opportunity.closed_lost"
   | "call.booked"
-  | "form.submitted";
+  | "form.submitted"
+  | "account.created"
+  | "account.updated";
 
 export function signPayload(secret: string, rawBody: string): string {
   return crypto.createHmac("sha256", secret).update(rawBody).digest("hex");

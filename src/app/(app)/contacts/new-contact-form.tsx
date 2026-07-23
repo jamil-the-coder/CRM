@@ -6,12 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AccountPicker } from "@/components/account-picker";
 
-export function NewContactForm() {
+export function NewContactForm({
+  accounts,
+}: {
+  accounts: { id: string; name: string }[];
+}) {
   const router = useRouter();
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
+  const [accountId, setAccountId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -27,6 +33,7 @@ export function NewContactForm() {
         firstName,
         email: email || undefined,
         company: company || undefined,
+        accountId: accountId || undefined,
       }),
     });
 
@@ -40,12 +47,13 @@ export function NewContactForm() {
     setFirstName("");
     setEmail("");
     setCompany("");
+    setAccountId("");
     setSubmitting(false);
     router.refresh();
   }
 
   return (
-    <Card>
+    <Card className="overflow-visible">
       <CardContent className="pt-6">
         <form
           onSubmit={handleSubmit}
@@ -75,6 +83,13 @@ export function NewContactForm() {
               id="company"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-1 flex-col gap-2">
+            <AccountPicker
+              accounts={accounts}
+              value={accountId}
+              onChange={setAccountId}
             />
           </div>
           <Button type="submit" disabled={submitting}>

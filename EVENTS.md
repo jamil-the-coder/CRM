@@ -56,5 +56,7 @@ To verify in an n8n Function node (or any receiver): compute `HMAC-SHA256(secret
 | `opportunity.closed_lost`   | An opportunity's stage becomes `closed_lost`                                                    | `{ opportunity }`            |
 | `form.submitted`            | An embedded form is successfully submitted (spam/rate-limited submissions do **not** fire this) | `{ formId, formName, lead }` |
 | `call.booked`               | A call is booked via the (Phase 9) calendar interface                                           | _(added in Phase 9)_         |
+| `account.created`           | An account is created                                                                            | `{ account }`                |
+| `account.updated`           | Any field on an account changes                                                                 | `{ account }`                |
 
 New event types are additive — existing subscribers are never broken by a new one being introduced.

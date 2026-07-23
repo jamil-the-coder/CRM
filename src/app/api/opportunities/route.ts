@@ -8,6 +8,7 @@ import { emitEvent } from "@/lib/webhooks";
 const createOpportunitySchema = z.object({
   contactId: z.string().min(1),
   leadId: z.string().min(1).nullable().optional(),
+  accountId: z.string().min(1).nullable().optional(),
   name: z.string().trim().min(1).max(300),
   stage: z.string().trim().min(1).max(100).optional(),
   value: z.number().min(0).optional(),
@@ -43,7 +44,8 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
-  const { contactId, leadId, expectedCloseDate, ...rest } = parsed.data;
+  const { contactId, leadId, accountId, expectedCloseDate, ...rest } =
+    parsed.data;
 
   const contact = await db.contact.findFirst({
     where: { id: contactId, tenantId },
@@ -63,12 +65,24 @@ export async function POST(request: NextRequest) {
       );
     }
   }
+  if (accountId) {
+    const account = await db.account.findFirst({
+      where: { id: accountId, tenantId },
+    });
+    if (!account) {
+      return NextResponse.json(
+        { error: "accountId does not belong to this tenant" },
+        { status: 400 },
+      );
+    }
+  }
 
   const opportunity = await db.opportunity.create({
     data: {
       tenantId,
       contactId,
       leadId,
+      accountId,
       expectedCloseDate: expectedCloseDate
         ? new Date(expectedCloseDate)
         : undefined,

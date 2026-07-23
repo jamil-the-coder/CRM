@@ -23,8 +23,12 @@ https://<your-crm-domain>/api/v1
 
 | Method | Path                                | What it does                                                                                                           |
 | ------ | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/accounts`                         | List accounts                                                                                                          |
+| POST   | `/accounts`                         | Create an account                                                                                                      |
+| GET    | `/accounts/:id`                     | Get one account, including its linked contacts and opportunities                                                       |
+| PATCH  | `/accounts/:id`                     | Update an account                                                                                                      |
 | GET    | `/contacts`                         | List contacts                                                                                                          |
-| POST   | `/contacts`                         | Create a contact                                                                                                       |
+| POST   | `/contacts`                         | Create a contact (optionally with an `accountId`)                                                                      |
 | GET    | `/contacts/:id`                     | Get one contact                                                                                                        |
 | PATCH  | `/contacts/:id`                     | Update a contact                                                                                                       |
 | GET    | `/leads`                            | List leads                                                                                                             |
@@ -32,7 +36,7 @@ https://<your-crm-domain>/api/v1
 | GET    | `/leads/:id`                        | Get one lead                                                                                                           |
 | PATCH  | `/leads/:id`                        | Update a lead — changing `status` fires `lead.status_changed`                                                          |
 | GET    | `/opportunities`                    | List opportunities                                                                                                     |
-| POST   | `/opportunities`                    | Create an opportunity (requires an existing `contactId`)                                                               |
+| POST   | `/opportunities`                    | Create an opportunity (requires an existing `contactId`, optionally an `accountId`)                                    |
 | GET    | `/opportunities/:id`                | Get one opportunity                                                                                                    |
 | PATCH  | `/opportunities/:id`                | Update an opportunity — setting `stage` to `closed_won`/`closed_lost` fires the matching webhook and stamps `closedAt` |
 | GET    | `/activities?entityType=&entityId=` | List timeline entries, optionally filtered                                                                             |

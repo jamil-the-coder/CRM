@@ -10,6 +10,7 @@ const updateContactSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(320).nullable().optional(),
   phone: z.string().trim().max(50).nullable().optional(),
   company: z.string().trim().max(200).nullable().optional(),
+  accountId: z.string().min(1).nullable().optional(),
 });
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -47,6 +48,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   });
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (parsed.data.accountId) {
+    const account = await db.account.findFirst({
+      where: { id: parsed.data.accountId, tenantId: auth.tenantId },
+    });
+    if (!account) {
+      return NextResponse.json(
+        { error: "accountId does not belong to this tenant" },
+        { status: 400 },
+      );
+    }
   }
 
   const merged = { ...existing, ...parsed.data };
