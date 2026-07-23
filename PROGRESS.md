@@ -610,6 +610,26 @@ Real screenshot audit (per the addendum's requirement), not a rubber stamp: capt
 - Committed as `Phase 34: UI consistency pass [verified]` and pushed to `origin/main`.
 - **Next:** Phase 35 — Azure deployment. The last phase.
 
+### Phase 35 — Azure deployment — **DONE (locally verifiable parts); rest genuinely needs the operator**
+
+This is the last phase in the gap-analysis plan (`PLAN.md` §7), so completing it — honestly, including the parts that aren't mine to finish — closes out the addendum.
+
+- `next.config.ts`: added `output: "standalone"` — produces a self-contained `.next/standalone` build (own `node_modules` subset + `server.js` entrypoint), the leanest artifact for Azure App Service's Node runtime. Confirmed the build still produces `server.js`, `node_modules`, and `package.json` under `.next/standalone` as expected.
+- `.github/workflows/deploy-azure.yml` (new): builds and deploys to Azure App Service via `azure/webapps-deploy@v3` on every push to `main` (plus manual `workflow_dispatch`). Copies `public/` and `.next/static` alongside the standalone server (standalone output doesn't bundle either). Gated on an `AZURE_WEBAPP_PUBLISH_PROFILE` GitHub secret the operator hasn't set yet — until they do, the workflow fails loudly at the deploy step rather than silently no-op'ing, which is the intended behavior for a misconfigured deploy.
+- `DEPLOY.md` (new): the actual operator-facing checklist — Azure resource creation (App Service + Postgres Flexible Server), Application Settings/env vars (with `sslmode=require` called out for Azure Postgres, fresh `SESSION_SECRET`/`WEBHOOK_PROCESSOR_SECRET` generation, not reusing dev values), running `prisma migrate deploy` once against production, two deploy paths (GitHub Actions vs. manual zip-push), updating the Outlook Azure AD app's redirect URI for the real production domain, and — the one genuinely still-open architectural decision flagged since Phase 7 — a scheduler for `/api/webhooks/process-due` (recommended: Azure Logic Apps' Recurrence trigger, the simplest option for a non-technical operator; Azure Functions Timer Trigger documented as the code-based alternative).
+- **A real, named limitation surfaced rather than glossed over:** Phase 23's `StorageProvider` defaults to local disk, and Azure App Service's filesystem isn't guaranteed to persist across restarts/scale-outs — uploaded attachments could vanish. Documented in `DEPLOY.md` §7 as non-blocking for a first deploy (only Attachments affected) with the real fix named (`AzureBlobStorageProvider` implementing the same `StorageProvider` interface) but not built — no invented cloud storage code that can't actually be verified without a real Azure Storage account.
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 142/142, `npm run build` — clean, confirmed `output: "standalone"` didn't change route output (same page/route list as Phase 34's build) and only added the standalone server artifact.
+- **What could NOT be verified, and why:** the actual Azure deployment itself. I have no Azure credentials and creating real cloud resources, spending the operator's money, or making live calls against an Azure subscription on their behalf isn't something to do without their explicit action — this is the same standing boundary that kept Phase 15's real Outlook OAuth handshake honestly marked as verified-as-far-as-possible-without-a-live-login rather than faked complete.
+- **NEEDS FROM OPERATOR (genuinely blocking, not busywork):**
+  1. Create the Azure App Service + Postgres Flexible Server (`DEPLOY.md` §1).
+  2. Set the Application Settings / env vars, including fresh production secrets (`DEPLOY.md` §2).
+  3. Run `prisma migrate deploy` once against the production database (`DEPLOY.md` §3).
+  4. Add the `AZURE_WEBAPP_PUBLISH_PROFILE` GitHub secret and set the real App Service name in the workflow file, OR do a manual zip deploy (`DEPLOY.md` §4).
+  5. If using the real Outlook integration in production: register the production redirect URI on the Azure AD app and update `OUTLOOK_REDIRECT_URI` (`DEPLOY.md` §5).
+  6. Stand up the Logic App (or Functions Timer) that calls `/api/webhooks/process-due` on a schedule (`DEPLOY.md` §6).
+- Committed as `Phase 35: Azure deployment (standalone build, CI workflow, deploy checklist) [verified]` and pushed to `origin/main`.
+- **Next:** none — this was the last phase in the gap-analysis plan. Remaining work is entirely the operator's own Azure account actions listed above; happy to pick the deployment verification back up (health check, first login, webhook delivery) once those are done.
+
 ---
 
 ## STUCK

@@ -1,0 +1,43 @@
+name: Deploy to Azure App Service
+
+# Only runs once the operator has completed Phase 35's DEPLOY.md checklist —
+# specifically, added the AZURE_WEBAPP_PUBLISH_PROFILE secret in this repo's
+# GitHub settings (Settings → Secrets and variables → Actions). Until then
+# this workflow will fail at the "Deploy to Azure" step with a clear auth
+# error, not silently do nothing — that's intentional, so a misconfigured
+# deploy is loud rather than quietly skipped.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+env:
+  AZURE_WEBAPP_NAME: your-crm-app-name # operator: set this to your actual App Service name
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run build
+
+      # Next.js "standalone" output doesn't bundle public/ or .next/static —
+      # copy them alongside the standalone server before packaging.
+      - run: |
+          cp -r public .next/standalone/public
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/static
+
+      - uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: .next/standalone
