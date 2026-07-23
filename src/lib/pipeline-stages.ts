@@ -1,13 +1,21 @@
 import { db } from "@/lib/db";
 
 export const DEFAULT_PIPELINE_STAGES = [
-  { key: "new", label: "New", sortOrder: 0, isWon: false, isLost: false },
+  {
+    key: "new",
+    label: "New",
+    sortOrder: 0,
+    isWon: false,
+    isLost: false,
+    defaultProbability: 10,
+  },
   {
     key: "contacted",
     label: "Contacted",
     sortOrder: 1,
     isWon: false,
     isLost: false,
+    defaultProbability: 25,
   },
   {
     key: "qualified",
@@ -15,6 +23,7 @@ export const DEFAULT_PIPELINE_STAGES = [
     sortOrder: 2,
     isWon: false,
     isLost: false,
+    defaultProbability: 50,
   },
   {
     key: "proposal",
@@ -22,6 +31,7 @@ export const DEFAULT_PIPELINE_STAGES = [
     sortOrder: 3,
     isWon: false,
     isLost: false,
+    defaultProbability: 75,
   },
   {
     key: "closed_won",
@@ -29,6 +39,7 @@ export const DEFAULT_PIPELINE_STAGES = [
     sortOrder: 4,
     isWon: true,
     isLost: false,
+    defaultProbability: 100,
   },
   {
     key: "closed_lost",
@@ -36,6 +47,7 @@ export const DEFAULT_PIPELINE_STAGES = [
     sortOrder: 5,
     isWon: false,
     isLost: true,
+    defaultProbability: 0,
   },
 ];
 

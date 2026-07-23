@@ -310,14 +310,15 @@ model CallBooking {
 // than a foreign key, so the Phase 8 API contract (stage as a string) never
 // has to change.
 model PipelineStage {
-  id        String   @id @default(cuid())
-  tenantId  String   @map("tenant_id")
-  key       String
-  label     String
-  sortOrder Int      @map("sort_order")
-  isWon     Boolean  @default(false) @map("is_won")
-  isLost    Boolean  @default(false) @map("is_lost")
-  createdAt DateTime @default(now()) @map("created_at")
+  id                 String   @id @default(cuid())
+  tenantId           String   @map("tenant_id")
+  key                String
+  label              String
+  sortOrder          Int      @map("sort_order")
+  isWon              Boolean  @default(false) @map("is_won")
+  isLost             Boolean  @default(false) @map("is_lost")
+  defaultProbability Int      @default(0) @map("default_probability")
+  createdAt          DateTime @default(now()) @map("created_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 

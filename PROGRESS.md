@@ -521,6 +521,18 @@ Closes the gap-analysis finding: `Lead.ownerUserId`/`Opportunity.ownerUserId` ex
 - Committed as `Phase 27: quotes [verified]` and pushed to `origin/main`.
 - **Next:** Phase 28 — forecasting (weighted pipeline).
 
+### Phase 28 — Forecasting (weighted pipeline) — **DONE**
+
+- Added `PipelineStage.defaultProbability` (Int, 0–100) and set sensible defaults on the seeded default stages (new 10%, contacted 25%, qualified 50%, proposal 75%, closed_won 100%, closed_lost 0%). The custom-stage creation API (`POST /api/pipeline-stages`) now accepts an optional `defaultProbability` too.
+- `getWeightedPipelineValue()` in `src/lib/reports.ts`: each stage's raw value × its `defaultProbability`, returned per-stage alongside the existing raw `getPipelineValueByStage` (both stay available — nothing about the raw report changed).
+- Dashboard gained a fourth stat tile, "Weighted pipeline" — the sum of weighted value across all non-closed stages, formatted as currency.
+- **Caught and fixed a real bug via the screenshot pass, not the test suite:** the dashboard first showed "Weighted pipeline: $0" against the seeded demo tenant, despite clearly having pipeline value. Root cause: `defaultProbability` is a genuinely new column with a schema default of `0` — only **newly seeded** tenants get the sensible per-key values from `DEFAULT_PIPELINE_STAGES` (via `seedDefaultPipelineStages`); every tenant that existed before this migration (including the demo tenant, and any real tenant on a live deployment) got `0` on all their existing stage rows and stayed at `0` forever, since `ensurePipelineStages` only seeds when a tenant has zero stage rows. Fixed with a second, explicitly data-only migration (`backfill_stage_default_probability`) that sets the sensible default for any stage row still at the column default `0` and matching a known default key — a tenant that already set their own value via the API keeps it; non-default custom stage keys are untouched. Re-verified the dashboard afterward: **$34,175**, matching the hand-calculated sum (800 + 3,750 + 6,000 + 23,625) exactly.
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 124/124 (extended the existing hand-verified `reports.test.ts` fixture — same known opportunities from Phase 13's original test — with weighted-value assertions computed by hand against the known default probabilities, rather than adding a new test file with a fresh fixture). `npm run build` — clean.
+- A real Playwright pass against the dashboard, both before and after the backfill migration, is what actually caught and then confirmed the fix — the kind of bug automated tests alone wouldn't have caught, since a fresh test tenant always gets seeded with the correct values and never exercises the pre-existing-tenant backfill path.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 28: forecasting (weighted pipeline) [verified]` and pushed to `origin/main`.
+- **Next:** Phase 29 — team management + role enforcement.
+
 ---
 
 ## STUCK

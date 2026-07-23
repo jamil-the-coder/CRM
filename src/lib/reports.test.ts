@@ -14,6 +14,7 @@ import {
   getLeadSourceBreakdown,
   getPipelineValueByStage,
   getTimeSeries,
+  getWeightedPipelineValue,
 } from "./reports";
 
 const createdTenantIds: string[] = [];
@@ -147,5 +148,17 @@ describe("reports — hand-verified against known seeded data", () => {
     expect(today?.leadsCreated).toBe(5); // 3 + 2 leads created above
     expect(today?.dealsClosed).toBe(1); // only B closed won
     expect(series).toHaveLength(14);
+
+    // --- Weighted pipeline: rawValue x each stage's defaultProbability ---
+    // Default seeded stages: new=10%, qualified=50%, closed_won=100%.
+    const weighted = await getWeightedPipelineValue(tenant.tenantId);
+    const weightedByKey = Object.fromEntries(weighted.map((w) => [w.key, w]));
+    expect(weightedByKey.new.rawValue).toBe(500);
+    expect(weightedByKey.new.probability).toBe(10);
+    expect(weightedByKey.new.weightedValue).toBe(50); // 500 * 0.10
+    expect(weightedByKey.qualified.rawValue).toBe(1000);
+    expect(weightedByKey.qualified.probability).toBe(50);
+    expect(weightedByKey.qualified.weightedValue).toBe(500); // 1000 * 0.50
+    expect(weightedByKey.closed_won.weightedValue).toBe(2000); // 2000 * 1.00
   });
 });

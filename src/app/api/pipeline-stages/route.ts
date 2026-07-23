@@ -18,6 +18,7 @@ const createStageSchema = z.object({
   label: z.string().trim().min(1).max(100),
   isWon: z.boolean().optional(),
   isLost: z.boolean().optional(),
+  defaultProbability: z.number().int().min(0).max(100).optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
       label: parsed.data.label,
       isWon: parsed.data.isWon ?? false,
       isLost: parsed.data.isLost ?? false,
+      defaultProbability: parsed.data.defaultProbability ?? 0,
       sortOrder: (maxOrder._max.sortOrder ?? -1) + 1,
     },
   });

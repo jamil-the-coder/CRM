@@ -15,6 +15,37 @@ export async function getPipelineValueByStage(tenantId: string) {
   });
 }
 
+/**
+ * Weighted pipeline value: each open opportunity's value × its stage's
+ * defaultProbability (Phase 28) — a rollup of "how much revenue is
+ * realistically likely," alongside the existing raw (unweighted) total from
+ * getPipelineValueByStage. Closed-lost stages contribute 0 by construction
+ * (defaultProbability 0); closed-won stages contribute at 100%, which is
+ * correct — that revenue is no longer a forecast, it already happened.
+ */
+export async function getWeightedPipelineValue(tenantId: string) {
+  const stages = await ensurePipelineStages(tenantId);
+  const probabilityByStage = new Map(stages.map((s) => [s.key, s.defaultProbability]));
+
+  const opportunities = await db.opportunity.findMany({
+    where: { tenantId },
+    select: { stage: true, value: true },
+  });
+
+  return stages.map((stage) => {
+    const inStage = opportunities.filter((o) => o.stage === stage.key);
+    const rawValue = inStage.reduce((sum, o) => sum + Number(o.value), 0);
+    const probability = probabilityByStage.get(stage.key) ?? 0;
+    return {
+      key: stage.key,
+      label: stage.label,
+      rawValue,
+      weightedValue: (rawValue * probability) / 100,
+      probability,
+    };
+  });
+}
+
 export async function getConversionFunnel(tenantId: string) {
   const stages = await ensurePipelineStages(tenantId);
   const nonLostStages = stages

@@ -7,6 +7,7 @@ import {
   getLeadSourceBreakdown,
   getPipelineValueByStage,
   getTimeSeries,
+  getWeightedPipelineValue,
 } from "@/lib/reports";
 import { PipelineValueChart } from "./pipeline-value-chart";
 import { ConversionFunnelChart } from "./conversion-funnel-chart";
@@ -22,6 +23,7 @@ export default async function DashboardPage() {
     leadCount,
     openOpportunityCount,
     pipelineValue,
+    weightedPipeline,
     funnel,
     leadSources,
     timeSeries,
@@ -32,10 +34,20 @@ export default async function DashboardPage() {
       where: { tenantId, stage: { notIn: ["closed_won", "closed_lost"] } },
     }),
     getPipelineValueByStage(tenantId),
+    getWeightedPipelineValue(tenantId),
     getConversionFunnel(tenantId),
     getLeadSourceBreakdown(tenantId),
     getTimeSeries(tenantId),
   ]);
+
+  const currencyFormatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  });
+  const openWeightedTotal = weightedPipeline
+    .filter((s) => s.key !== "closed_won" && s.key !== "closed_lost")
+    .reduce((sum, s) => sum + s.weightedValue, 0);
 
   const stats = [
     { label: "Contacts", value: contactCount, href: "/contacts" },
@@ -43,6 +55,11 @@ export default async function DashboardPage() {
     {
       label: "Open opportunities",
       value: openOpportunityCount,
+      href: "/opportunities",
+    },
+    {
+      label: "Weighted pipeline",
+      value: currencyFormatter.format(openWeightedTotal),
       href: "/opportunities",
     },
   ];
@@ -55,7 +72,7 @@ export default async function DashboardPage() {
         </h1>
         <p className="text-sm text-zinc-500">A quick look at your pipeline.</p>
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <Link key={stat.label} href={stat.href}>
             <Card className="transition-shadow hover:shadow-md">
