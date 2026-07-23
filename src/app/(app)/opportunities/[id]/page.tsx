@@ -12,6 +12,7 @@ import { AddNoteForm } from "@/components/add-note-form";
 import { AttachmentsSection } from "@/components/attachments-section";
 import { RecordTasksSection } from "@/components/record-tasks-section";
 import { tagColorClassName } from "@/lib/tag-colors";
+import { stageBadgeVariant } from "@/lib/status-badge";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -64,7 +65,9 @@ export default async function OpportunityDetailPage({
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <div>
               <p className="text-xs text-zinc-500">Stage</p>
-              <Badge variant="secondary">{opportunity.stage}</Badge>
+              <Badge variant={stageBadgeVariant(opportunity.stage)}>
+                {opportunity.stage}
+              </Badge>
             </div>
             <div>
               <p className="text-xs text-zinc-500">Contact</p>

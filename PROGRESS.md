@@ -594,6 +594,22 @@ A small, focused phase — the `AuditLog` model and `recordAuditLog()` have exis
 - Committed as `Phase 33: in-app search [verified]` and pushed to `origin/main`.
 - **Next:** Phase 34 — UI consistency pass (bring every pre-addendum screen up to the addendum's UI bar in one sweep).
 
+### Phase 34 — UI consistency pass — **DONE**
+
+Real screenshot audit (per the addendum's requirement), not a rubber stamp: captured every pre-addendum screen not otherwise touched this session — Login, Signup, Forms, Webhooks, API Keys, Calls, Invoices — plus a fresh look at Dashboard/Contacts/Leads/Opportunities.
+
+- **Most of the audited screens already passed** — a natural result of every phase this session reusing the same `Card`/`Badge`/typography/spacing conventions rather than inventing new ones. No changes made to those; changing working, already-compliant screens for the sake of touching them would have been exactly the kind of unnecessary churn the master prompt warns against.
+- **One real, cross-cutting violation found and fixed:** the addendum's color rule — "pipeline stages, lead status, invoice status, task overdue-ness each get a stable colour treatment reused in every place that concept appears" — was being violated by every status/stage badge in the app rendering the same flat gray `variant="secondary"` regardless of what it said. A "qualified" lead looked identical to a "new" one; a "closed_won" opportunity looked identical to a "new" one. Only Tasks (Phase 24, overdue → red) had ever gotten real color treatment.
+- Fixed by adding a `success` variant to the shared `Badge` component (emerald, styled consistently with the existing `destructive` variant's light/dark treatment) and a small `src/lib/status-badge.ts` mapping — `stageBadgeVariant`, `leadStatusBadgeVariant`, `quoteStatusBadgeVariant` — applied everywhere the corresponding badge renders: Opportunity stage (Kanban, Opportunity detail, Account detail's linked-opportunities list), Lead status (Leads list, Lead detail), and Quote status (Quotes list, Quote detail — quotes weren't in the addendum's literal list since they didn't exist yet when it was written, but the same reasoning applies directly).
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 142/142, zero regressions from the shared `Badge` component change. `npm run build` — clean.
+- A real before/after Playwright screenshot on the Leads page is the actual proof: "qualified" leads now render with a distinct green badge while "new"/"contacted" stay neutral gray — visibly different where they were visually identical before.
+- **DECISIONS:**
+  - Left Calls (`booking.status`) and Invoices (`invoice.status`) unchanged — both currently only ever have one real-world value in practice (`confirmed` / `draft`), so there's no actual distinction to color yet; adding a mapping with only one branch would be speculative, not a fix for an observed problem. Revisit if either gains real status variety later.
+  - `stageBadgeVariant`/`quoteStatusBadgeVariant` key off the literal strings `"closed_won"`/`"closed_lost"`/`"accepted"`/`"declined"` rather than a per-tenant `PipelineStage.isWon`/`isLost` lookup — matches the same magic-string convention already used in several other places in this codebase (the stage-change detection in the Opportunity PATCH routes, `getTimeSeries`). A tenant's custom pipeline stages (beyond the six defaults) won't get color-coded by this pass; a fully general version would need every stage-badge call site to join against `PipelineStage`, which is more machinery than this consistency pass's scope justified.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 34: UI consistency pass [verified]` and pushed to `origin/main`.
+- **Next:** Phase 35 — Azure deployment. The last phase.
+
 ---
 
 ## STUCK

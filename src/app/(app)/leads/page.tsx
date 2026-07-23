@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { MineToggle } from "@/components/mine-toggle";
 import { ExportCsvLink } from "@/components/export-csv-link";
+import { leadStatusBadgeVariant } from "@/lib/status-badge";
 
 export default async function LeadsPage({
   searchParams,
@@ -61,7 +62,9 @@ export default async function LeadsPage({
                   </p>
                   <p className="text-xs text-zinc-500">Source: {lead.source}</p>
                 </div>
-                <Badge variant="secondary">{lead.status}</Badge>
+                <Badge variant={leadStatusBadgeVariant(lead.status)}>
+                  {lead.status}
+                </Badge>
               </Link>
             ))}
           </CardContent>

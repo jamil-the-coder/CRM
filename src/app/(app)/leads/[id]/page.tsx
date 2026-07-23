@@ -10,6 +10,7 @@ import { RecordTimeline } from "@/components/record-timeline";
 import { AddNoteForm } from "@/components/add-note-form";
 import { AttachmentsSection } from "@/components/attachments-section";
 import { RecordTasksSection } from "@/components/record-tasks-section";
+import { leadStatusBadgeVariant } from "@/lib/status-badge";
 import { tagColorClassName } from "@/lib/tag-colors";
 
 export default async function LeadDetailPage({
@@ -55,7 +56,9 @@ export default async function LeadDetailPage({
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <div>
               <p className="text-xs text-zinc-500">Status</p>
-              <Badge variant="secondary">{lead.status}</Badge>
+              <Badge variant={leadStatusBadgeVariant(lead.status)}>
+                {lead.status}
+              </Badge>
             </div>
             <div>
               <p className="text-xs text-zinc-500">Score</p>

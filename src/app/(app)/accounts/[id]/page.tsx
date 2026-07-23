@@ -12,6 +12,7 @@ import { AddNoteForm } from "@/components/add-note-form";
 import { AttachmentsSection } from "@/components/attachments-section";
 import { RecordTasksSection } from "@/components/record-tasks-section";
 import { tagColorClassName } from "@/lib/tag-colors";
+import { stageBadgeVariant } from "@/lib/status-badge";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -153,7 +154,9 @@ export default async function AccountDetailPage({
                       {currencyFormatter.format(Number(opportunity.value))}
                     </p>
                   </div>
-                  <Badge variant="secondary">{opportunity.stage}</Badge>
+                  <Badge variant={stageBadgeVariant(opportunity.stage)}>
+                    {opportunity.stage}
+                  </Badge>
                 </Link>
               ))}
             </CardContent>

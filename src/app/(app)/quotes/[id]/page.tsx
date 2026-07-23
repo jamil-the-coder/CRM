@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { QuoteStatusActions } from "./quote-status-actions";
 import { PrintButton } from "./print-button";
+import { quoteStatusBadgeVariant } from "@/lib/status-badge";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -51,7 +52,9 @@ export default async function QuoteDetailPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">{quote.status}</Badge>
+          <Badge variant={quoteStatusBadgeVariant(quote.status)}>
+            {quote.status}
+          </Badge>
           <PrintButton />
         </div>
       </div>

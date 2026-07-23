@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { computeQuoteTotal } from "@/lib/quotes";
 import { NewQuoteForm } from "./new-quote-form";
+import { quoteStatusBadgeVariant } from "@/lib/status-badge";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -72,7 +73,9 @@ export default async function QuotesPage() {
                     {currencyFormatter.format(computeQuoteTotal(quote.lines))}
                   </p>
                 </div>
-                <Badge variant="secondary">{quote.status}</Badge>
+                <Badge variant={quoteStatusBadgeVariant(quote.status)}>
+                  {quote.status}
+                </Badge>
               </Link>
             ))}
           </CardContent>
