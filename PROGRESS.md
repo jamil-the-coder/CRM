@@ -630,6 +630,27 @@ This is the last phase in the gap-analysis plan (`PLAN.md` §7), so completing i
 - Committed as `Phase 35: Azure deployment (standalone build, CI workflow, deploy checklist) [verified]` and pushed to `origin/main`.
 - **Next:** none — this was the last phase in the gap-analysis plan. Remaining work is entirely the operator's own Azure account actions listed above; happy to pick the deployment verification back up (health check, first login, webhook delivery) once those are done.
 
+### Phase 35b — Deployment target switched to free-tier (Neon + Vercel) — **DONE**
+
+- **Operator decision:** no revenue yet, so defer the Azure spend. Deploy for free now on Neon (Postgres) + Vercel (hosting) + a scheduled GitHub Actions workflow (webhook retries), and migrate to Azure once there's a paying customer.
+- `next.config.ts`: removed `output: "standalone"` — Vercel doesn't need it (has its own build/serve pipeline); left a comment to re-add it if/when this migrates to Azure App Service.
+- Original Azure content moved from `DEPLOY.md` to a new `DEPLOY-AZURE.md`, framed explicitly as the future migration path — nothing thrown away, just relabeled. Noted there that Neon can keep serving as the database even after hosting itself moves to Azure, if the operator wants to split those two migrations.
+- `.github/workflows/deploy-azure.yml`: disabled its `push`-triggered auto-deploy (switched to `workflow_dispatch`-only) rather than deleting it, so it doesn't fail loudly on every push while unused — ready to re-enable per `DEPLOY-AZURE.md`'s instructions when the Azure migration actually starts.
+- Added `.github/workflows/webhook-cron.yml`: a scheduled workflow (every 5 minutes) that POSTs to `/api/webhooks/process-due` with the bearer secret — Vercel's free-tier cron is daily-only, too infrequent for webhook retries, and this reuses GitHub Actions (already in use for this repo) instead of introducing a new third-party cron service.
+- Wrote a new `DEPLOY.md` covering the free stack end to end: Neon setup (calling out the **pooled** connection string specifically, since Vercel's serverless functions need PgBouncer-style pooling to avoid exhausting Postgres's connection limit — a detail that wouldn't have mattered on Azure App Service's single long-running process), the one-time migration, Vercel env vars/deploy, the Outlook redirect-URI update, activating the cron workflow via two GitHub repo secrets, and the same honestly-flagged attachments-storage caveat as before (now *stricter* on Vercel — serverless functions don't persist disk writes between requests at all, vs. Azure App Service's "not guaranteed to persist across restarts").
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 142/142, `npm run build` — clean (re-ran the full suite after the `next.config.ts` change, not just assumed removing a config line was safe).
+- **NEEDS FROM OPERATOR:** none blocking for this commit itself. To actually go live: create the Neon project, run the one-time migration (see next entry — **already done** as of this session), import the repo into Vercel and set its env vars, and add the two GitHub secrets for the cron workflow — all in `DEPLOY.md`.
+- Committed as `Switch deployment target to free-tier Neon + Vercel, defer Azure migration` and pushed to `origin/main`.
+
+### Production database — provisioned and migrated (Neon) — **DONE**
+
+- Operator created a Neon project and supplied the pooled connection string directly for a one-off command (never written to `.env`, which stays pointed at local dev per the operator's explicit instruction).
+- Ran `prisma migrate deploy` against it: **all 25 migrations applied successfully**, from `20260722194650_init` through `20260723101406_add_tenant_restrict_visibility` — the complete schema history, including the `pg_trgm` extension migration and both `PipelineStage.defaultProbability` migrations (schema + data backfill).
+- `npm run db:seed` was **not** run against it, per instruction — the production database has the real schema only, no demo tenant/data.
+- Confirmed via `git status`/`git diff` that `.env` was not modified by this — the connection string was passed inline as a single-command environment variable, never persisted to disk in this repo.
+- **NEEDS FROM OPERATOR:** the remaining Vercel-side steps in `DEPLOY.md` (§1 already done here, §2 already done here — proceed to §3: import the repo into Vercel and set the same `DATABASE_URL` there).
+- Not a separate commit — no code changed, just production infrastructure state; logged here for the record per the master prompt's own standard of never leaving unverified/undocumented production changes.
+
 ---
 
 ## STUCK
