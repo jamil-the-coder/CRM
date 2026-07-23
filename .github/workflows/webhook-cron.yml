@@ -1,0 +1,21 @@
+name: Webhook retry ping
+
+# Calls /api/webhooks/process-due on a schedule so queued webhook retries
+# actually get processed (see EVENTS.md and DEPLOY.md). No app-hosting
+# platform in the current free-tier stack (Vercel) runs a frequent-enough
+# cron on its free plan, so this reuses GitHub Actions, which is already in
+# use for this repo and has no cost at this frequency.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger due webhook processing
+        run: |
+          curl -sf -X POST "${{ secrets.APP_BASE_URL }}/api/webhooks/process-due" \
+            -H "Authorization: Bearer ${{ secrets.WEBHOOK_PROCESSOR_SECRET }}"

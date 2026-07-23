@@ -1,115 +1,86 @@
-# DEPLOY.md — Deploying to Azure
+# DEPLOY.md — Deploying for free (Neon + Vercel)
 
-A step-by-step deployment checklist, written for a non-technical operator. Targets **Azure App Service** (not Azure Container Apps) — App Service takes a plain Node.js app with no Dockerfile or container registry to maintain, which matches this project's "minimal moving parts" philosophy from `PLAN.md` §1. Container Apps is the right call if this ever needs to scale across regions or run sidecar processes — neither applies here.
+A step-by-step deployment checklist for running this app at **zero hosting cost** while there's no revenue yet — Postgres on **Neon**'s free tier, the app itself on **Vercel**'s free tier, and webhook retries on a free scheduled GitHub Actions workflow already in this repo. Nothing here requires a credit card.
 
-Everything below is a real, ordered checklist. Some steps genuinely require the operator's own Azure account access — I can't create resources in an account I don't have credentials for, and I won't fake having done so. Where a step needs you specifically, it's marked **← you do this**.
+When there's a paying customer and it's worth paying for something sturdier, see `DEPLOY-AZURE.md` for the migration path — moving later is just changing a connection string and where the app is hosted, not a rewrite.
+
+Some steps genuinely require your own Neon/Vercel/GitHub account access — I can't create accounts or resources on your behalf. Where a step needs you specifically, it's marked **← you do this**.
 
 ---
 
-## 1. Create the Azure resources **← you do this**
+## 1. Create a free Neon Postgres database **← you do this**
 
-You'll need two things in the Azure Portal (or via `az` CLI if you're comfortable with it):
+1. Sign up at neon.com (a GitHub login works) and create a new project.
+2. Neon gives you **two** connection strings — a direct one and a **pooled** one (the pooled hostname has `-pooler` in it). **Use the pooled one for `DATABASE_URL`.** This matters more here than it would self-hosting: Vercel runs your app as many short-lived serverless function instances, and a pooled connection (Neon runs PgBouncer for you) is what keeps that from exhausting Postgres's connection limit.
+3. Append `?sslmode=require` to the pooled connection string if it isn't already there.
 
-1. **Azure Database for PostgreSQL — Flexible Server**
-   - Any region close to you; the cheapest "Burstable" tier is plenty to start.
-   - Note the connection details: hostname, port (5432), admin username, password, database name.
-   - Under the server's **Networking** settings, allow your App Service to connect (either "Allow public access from any Azure service" for simplicity, or a proper VNet integration if you want it tighter).
+## 2. Run the database migration once **← you do this, one time**
 
-2. **Azure App Service** (Linux, Node 20 runtime)
-   - Any tier that supports "Always On" (Basic B1 or above) — Free/Shared tiers sleep the app, which breaks session cookies and scheduled webhook retries.
-   - Note the App Service's default hostname (`https://<your-app-name>.azurewebsites.net`) — you'll need it below.
+From your own machine, with `DATABASE_URL` pointed at the **Neon** connection string from step 1:
 
-## 2. Set environment variables **← you do this**
+```
+DATABASE_URL="<neon pooled connection string>" npx prisma migrate deploy
+```
 
-In the App Service's **Configuration → Application settings**, add every variable from the checklist below. These are the Azure equivalent of a `.env` file — never commit real values to git (the repo's `.env` is already gitignored).
+This applies every migration in `prisma/migrations/` in order. Do **not** run `npm run db:seed` against it — that script is for local demo data only and would create a fake "Demo Tenant" in your real customers' database.
+
+## 3. Deploy the app to Vercel **← you do this**
+
+1. Sign up at vercel.com with your GitHub account and "Import" this repository — Vercel detects it's a Next.js app automatically, no config needed (the app has no custom Vercel config to write).
+2. In the project's **Settings → Environment Variables**, add:
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | `postgresql://<user>:<password>@<host>:5432/<db>?schema=public&sslmode=require` — note the `sslmode=require`, Azure Postgres requires TLS |
-| `SESSION_SECRET` | Generate fresh: `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` — never reuse the dev value |
-| `WEBHOOK_PROCESSOR_SECRET` | Generate the same way — a different value than `SESSION_SECRET` |
-| `NODE_ENV` | `production` |
-| `PORT` | `8080` (Azure App Service's expected port for a custom Node server) |
+| `DATABASE_URL` | The Neon pooled connection string from step 1 |
+| `SESSION_SECRET` | Generate fresh: `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` — never reuse the local dev value |
+| `WEBHOOK_PROCESSOR_SECRET` | Generate the same way — a different value than `SESSION_SECRET`. You'll need this again in step 5. |
 | `CALENDAR_PROVIDER` | `outlook` if you want the real Outlook integration live in production, otherwise leave unset (defaults to `mock`) |
 | `OUTLOOK_CLIENT_ID` / `OUTLOOK_CLIENT_SECRET` / `OUTLOOK_TENANT_ID` | Only needed if `CALENDAR_PROVIDER=outlook` — the same Azure AD app already registered |
-| `OUTLOOK_REDIRECT_URI` | **Must change for production** — see step 5 below |
-| `STORAGE_PROVIDER` | Leave unset (defaults to `local`) — see the file-storage caveat in step 6 |
+| `OUTLOOK_REDIRECT_URI` | **Must change for production** — see step 4 below |
 
-## 3. Run the database migration once **← you do this, one time**
+3. Click **Deploy**. Vercel builds and serves it, and from then on every push to `main` deploys automatically — no workflow file or secrets to manage on the GitHub side for this.
+4. Note the project's Vercel URL (`https://<your-project>.vercel.app`, or a custom domain if you attach one later under **Settings → Domains**) — you'll need it in the next two steps.
 
-From your own machine, with `DATABASE_URL` pointed at the **production** database (not your local one):
+## 4. Update the Outlook redirect URI for production **← you do this, if using Outlook**
 
-```
-DATABASE_URL="<production connection string>" npx prisma migrate deploy
-```
+The Azure AD app registration's redirect URI is currently `http://localhost:3000/api/auth/outlook/callback` (local dev only). Once Vercel is live:
 
-This applies every migration in `prisma/migrations/` in order. Do **not** run `npm run db:seed` against production — that script is for local demo data only and would create a fake "Demo Tenant" in your real customers' database.
+1. In the Azure AD app registration's **Authentication** settings, add a second redirect URI: `https://<your-vercel-domain>/api/auth/outlook/callback`.
+2. Update the `OUTLOOK_REDIRECT_URI` Vercel environment variable to match exactly, then redeploy (Vercel's dashboard has a "Redeploy" button — env var changes don't apply retroactively to an already-built deployment).
+3. Leave the localhost one registered too, so local development keeps working alongside production.
 
-## 4. Deploy the app
+## 5. Turn on the webhook retry cron **← you do this**
 
-Two ways to do this, pick whichever you're more comfortable with:
+Vercel's free plan only allows cron jobs that run once a day, which is too infrequent for retrying due webhook deliveries — so this repo has a scheduled **GitHub Actions** workflow instead (`.github/workflows/webhook-cron.yml`, runs every 5 minutes, already committed). To activate it:
 
-**Option A — GitHub Actions (recommended, automatic on every push to `main`)**
+1. In this repo's GitHub **Settings → Secrets and variables → Actions**, add two repository secrets:
+   - `APP_BASE_URL` — your Vercel URL from step 3, with no trailing slash (e.g. `https://your-project.vercel.app`)
+   - `WEBHOOK_PROCESSOR_SECRET` — the exact same value you set in Vercel's environment variables in step 3
+2. That's it — GitHub runs it on schedule automatically once the secrets exist. You can also trigger it manually from the Actions tab to test it (**Actions → Webhook retry ping → Run workflow**) and confirm it returns a 200, not a 401.
 
-A workflow is already committed at `.github/workflows/deploy-azure.yml`. To activate it:
+## 6. File attachments storage — a real limitation to know about
 
-1. In the App Service's **Deployment Center**, choose "Download publish profile" and save the file.
-2. In this repo's GitHub settings → **Secrets and variables → Actions**, add a new secret named `AZURE_WEBAPP_PUBLISH_PROFILE` with the entire contents of that downloaded file.
-3. Edit `.github/workflows/deploy-azure.yml` and replace `your-crm-app-name` with your actual App Service name.
-4. Push to `main` (or re-run the workflow manually from the Actions tab) — it builds and deploys automatically from here on.
+Phase 23's `StorageProvider` defaults to local disk (`.storage/attachments/`). **Vercel's serverless filesystem does not persist between requests at all** — this is a stricter version of the same caveat that would've applied on Azure App Service. Any uploaded attachment will very likely be gone by the next request. This is a genuine, not-yet-solved gap on this hosting stack:
 
-**Option B — Manual deploy from your machine**
+- **Not blocking getting the rest of the app live** — every other feature works fully; only the Attachments feature (Phase 23) is affected.
+- **The real fix** is a new storage provider implementing the same `StorageProvider` interface (`src/lib/storage/types.ts`) — additive, no caller changes — pointed at something with real persistence (Vercel Blob has a free tier and is the natural fit alongside Vercel hosting; Cloudflare R2 or an S3-compatible bucket would also work). Not built yet; flagged here rather than silently shipping attachments as if they worked.
+- If a customer needs attachments to actually work before this is built, that's the signal to prioritize this over the Azure migration, not after it.
 
-```
-npm ci
-npx prisma generate
-npm run build
-cp -r public .next/standalone/public
-cp -r .next/static .next/standalone/.next/static
-```
-
-Then zip-deploy the `.next/standalone` folder via the Azure Portal's **Deployment Center → Manual deployment (zip push)**, or `az webapp deploy`.
-
-In both cases, set the App Service's **Startup Command** (Configuration → General settings) to:
-
-```
-node server.js
-```
-
-## 5. Update the Outlook redirect URI for production **← you do this, if using Outlook**
-
-The Azure AD app registration's redirect URI is currently `http://localhost:3000/api/auth/outlook/callback` (local dev only). Once the App Service is live:
-
-1. In the Azure AD app registration's **Authentication** settings, add a second redirect URI: `https://<your-app-name>.azurewebsites.net/api/auth/outlook/callback`.
-2. Update the `OUTLOOK_REDIRECT_URI` App Service setting to match exactly.
-3. You can leave the localhost one registered too, so local development keeps working alongside production.
-
-## 6. Point a scheduler at the webhook retry endpoint **← you do this**
-
-This has been a documented gap since Phase 7 (`EVENTS.md`) — webhook retries need something to call `POST /api/webhooks/process-due` every few minutes. Two reasonable options on Azure:
-
-- **Azure Logic Apps** — a "Recurrence" trigger (every 2–5 minutes) → an HTTP action `POST https://<your-app-name>.azurewebsites.net/api/webhooks/process-due` with header `Authorization: Bearer <WEBHOOK_PROCESSOR_SECRET>`. No code to write, configured entirely in the Azure Portal.
-- **Azure Functions, Timer Trigger** — a small function on the same schedule making the same HTTP call, if you'd rather keep it as code.
-
-Logic Apps is the simpler of the two for a non-technical operator — it's a few clicks, no deployment step of its own.
-
-## 7. File attachments storage — a real limitation to know about
-
-Phase 23's `StorageProvider` defaults to local disk (`.storage/attachments/` inside the app's own folder). **Azure App Service's filesystem is not guaranteed to persist across restarts or scale-outs** — an uploaded file could disappear the next time the app restarts. This is a genuine gap for a production deployment, not yet solved:
-
-- **Not blocking a first deployment** — everything else works fine; only the Attachments feature (Phase 23) is affected.
-- **The real fix** is a new `AzureBlobStorageProvider` implementing the same `StorageProvider` interface (`src/lib/storage/types.ts`) — additive, no caller changes, same pattern as everything else in this codebase — pointed at an Azure Storage Account (Blob container). Not built yet; flagged here rather than silently shipped as if it were solved.
-
-## 8. Verify the live deployment
+## 7. Verify the live deployment
 
 Once deployed:
 
-- `https://<your-app-name>.azurewebsites.net/api/health` should return `{"status":"ok",...}`.
-- Sign up a real test tenant, confirm login/logout work, confirm a webhook endpoint you add actually receives a delivery.
-- Point your production n8n instance's `/api/v1/*` calls and webhook subscriptions at the new `https://<your-app-name>.azurewebsites.net` URL instead of `localhost:3000`.
+- `https://<your-vercel-domain>/api/health` should return `{"status":"ok",...}`.
+- Sign up a real test tenant, confirm login/logout work.
+- Add a webhook endpoint, trigger an event, and confirm it's delivered (the GitHub Actions cron from step 5 is what retries it if the first attempt fails — worth actually testing that path once, not just trusting it).
+- Point your production n8n instance's `/api/v1/*` calls and webhook subscriptions at the new Vercel URL instead of `localhost:3000`.
 
 ---
 
 ## What's genuinely blocked without you
 
-Everything above marked **← you do this** requires your own Azure account access, which I don't have and won't fabricate having used. Everything else — the standalone build config, the GitHub Actions workflow, this checklist itself — is done and committed. Once you've completed steps 1–2 (resources + config) and told me the App Service name and that the database is reachable, I can pick the deployment back up (running the migration, verifying the health check, etc.) — but the resource creation and secret-entry steps are yours by design, per the project's standing rule against making live third-party/production changes without your explicit action.
+Everything above marked **← you do this** requires your own Neon/Vercel/GitHub account access, which I don't have and won't fabricate having used. Everything else — the app code, this checklist, the cron workflow — is done and committed. Tell me your Vercel URL once it's live and I can help verify the deployment (health check, a real webhook round-trip, etc.).
+
+## Moving to Azure later
+
+See `DEPLOY-AZURE.md`. Nothing here is a dead end — Neon can keep serving as the database even after the app itself moves to Azure App Service, if you'd rather migrate hosting and database on separate timelines.

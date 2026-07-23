@@ -1,11 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // "standalone" produces a self-contained .next/standalone build (its own
-  // node_modules subset + a server.js entrypoint) — the leanest deploy
-  // artifact for Azure App Service's Node runtime (Phase 35), since it
-  // doesn't need `npm install` to run in production, only to build.
-  output: "standalone",
+  // No custom `output` — deploying to Vercel for now (see DEPLOY.md), which
+  // builds and serves the app itself and doesn't need "standalone" output.
+  // If this ever migrates to Azure App Service (see DEPLOY-AZURE.md), add
+  // back `output: "standalone"` first.
 };
 
 export default nextConfig;

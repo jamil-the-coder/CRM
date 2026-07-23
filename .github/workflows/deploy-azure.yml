@@ -1,15 +1,15 @@
 name: Deploy to Azure App Service
 
-# Only runs once the operator has completed Phase 35's DEPLOY.md checklist —
-# specifically, added the AZURE_WEBAPP_PUBLISH_PROFILE secret in this repo's
-# GitHub settings (Settings → Secrets and variables → Actions). Until then
-# this workflow will fail at the "Deploy to Azure" step with a clear auth
-# error, not silently do nothing — that's intentional, so a misconfigured
-# deploy is loud rather than quietly skipped.
+# DISABLED (manual-trigger only) — the app currently deploys via Vercel's own
+# GitHub integration on the free-tier stack described in DEPLOY.md, not this
+# workflow. This file is kept ready for the Azure migration described in
+# DEPLOY-AZURE.md: once that migration starts, re-add `push: branches: [main]`
+# below to make it deploy automatically again, and add the
+# AZURE_WEBAPP_PUBLISH_PROFILE secret in this repo's GitHub settings
+# (Settings → Secrets and variables → Actions) first, or this will fail at
+# the "Deploy to Azure" step.
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch: {}
 
 env:
