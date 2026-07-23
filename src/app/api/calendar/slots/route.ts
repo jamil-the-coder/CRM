@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const from = new Date();
   const to = new Date(from.getTime() + 5 * 24 * 60 * 60_000);
 
-  const provider = getCalendarProvider();
+  const provider = getCalendarProvider(auth.user.tenantId);
   const slots = await provider.findAvailableSlots({
     from,
     to,

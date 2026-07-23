@@ -15,5 +15,12 @@ export default defineConfig({
     // parallel under load (bcrypt cost-12 hashing, multi-step CRUD flows) —
     // individual tests were passing in isolation but timing out under load.
     testTimeout: 15000,
+    env: {
+      // Pin to the mock calendar provider regardless of the developer's own
+      // .env — the calendar tests exercise MockCalendarProvider's behavior
+      // specifically, and shouldn't start failing just because a real
+      // CALENDAR_PROVIDER is configured for actual local use.
+      CALENDAR_PROVIDER: "mock",
+    },
   },
 });

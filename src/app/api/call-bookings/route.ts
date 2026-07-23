@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const provider = getCalendarProvider();
+  const provider = getCalendarProvider(tenantId);
   const { externalEventId } = await provider.bookSlot({
     startsAt: new Date(startsAt),
     endsAt: new Date(endsAt),

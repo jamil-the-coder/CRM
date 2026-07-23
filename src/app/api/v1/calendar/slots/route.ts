@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const provider = getCalendarProvider();
+  const provider = getCalendarProvider(auth.tenantId);
   const slots = await provider.findAvailableSlots({
     from,
     to,

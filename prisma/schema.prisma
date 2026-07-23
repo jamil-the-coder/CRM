@@ -37,6 +37,7 @@ model Tenant {
   callBookings      CallBooking[]
   pipelineStages    PipelineStage[]
   invoices          Invoice[]
+  calendarConnection CalendarConnection?
 
   @@map("tenants")
 }
@@ -352,4 +353,25 @@ model AuditLog {
   @@index([tenantId])
   @@index([tenantId, createdAt])
   @@map("audit_logs")
+}
+
+// One connected real-calendar account per tenant (the tenant's own OAuth
+// grant — this is not per-user, since call-booking acts on behalf of the
+// business, not an individual rep). Access/refresh tokens are opaque
+// third-party secrets, same trust boundary as passwordHash: never returned
+// in any API response.
+model CalendarConnection {
+  id           String   @id @default(cuid())
+  tenantId     String   @unique @map("tenant_id")
+  provider     String
+  accountEmail String   @map("account_email")
+  accessToken  String   @map("access_token")
+  refreshToken String   @map("refresh_token")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("calendar_connections")
 }
