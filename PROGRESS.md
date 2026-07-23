@@ -402,6 +402,21 @@ Ran the one-time v1 completeness audit the addendum asked for, against its check
 - Committed as `Phase 19: custom fields per tenant [verified]` and pushed to `origin/main`.
 - **Next:** Phase 20 — tags/labels.
 
+### Phase 20 — Tags/labels — **DONE**
+
+- Added `Tag` (per-tenant catalog: name + a fixed 6-color palette, not free-typed hex — defined once in `src/lib/tag-colors.ts` and reused everywhere a tag renders, per the UI bar's "color must mean something consistently" rule) and `TagAssignment` (many-to-many join; `entityType` a plain string, same polymorphic convention as `Activity`/`CustomFieldDefinition`, covering all four of Contact/Account/Lead/Opportunity even though the UI only wires two of them up this phase — see decisions).
+- `src/lib/tags.ts`: `getTagsForEntities` (batched, for list views) and `getEntityIdsForTag` (list-view filtering).
+- API: `/api/tags` (GET/POST, session-authed) + `/api/tags/:id` (DELETE), and a generic `/api/tag-assignments` (POST to assign, DELETE via query params to unassign) that validates both the tag and the target entity belong to the caller's tenant before creating the join row — the entity-ownership check is a small switch over the four taggable types, same shape as the existing `contactId`/`accountId`/`leadId` cross-tenant checks elsewhere.
+- **UI:** a Tags settings page (create with a 6-swatch color picker + live preview, list with per-tag usage count, remove), and full tagging wired into the **Contacts** list specifically: a tag-filter dropdown in the page header (`?tagId=` query param), and a per-row tag control (assigned tags as colored chips, click a chip to remove, a small "+" opens a dropdown of not-yet-assigned tags to add) — `contact-tags.tsx`.
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 94/94 (added `tags.test.ts`: tag CRUD, duplicate-name rejection, unauthenticated rejection, tenant isolation on deleting a tag, assign/unassign round-trip, and cross-tenant assignment rejected). `npm run build` — clean, all new routes present.
+- A real Playwright pass (logged in as the demo admin again, same rate-limit reason as Phase 19): created a tag with a color, assigned it to a contact via the inline picker, confirmed the badge renders with the right color, and confirmed the header filter correctly narrows the list to just that contact. Screenshots judged against the UI bar: consistent with every other list/settings page, the color swatches give clear visual affordance, no clipping issues (learned from Phase 18's account-picker bug — added `overflow-visible` to the Contacts list `Card` up front this time instead of finding it via a screenshot).
+- **DECISIONS:**
+  - Only wired the assignment/filter **UI** onto Contacts this phase, even though the schema and API cover all four taggable entity types (Contact/Account/Lead/Opportunity) — Account, Lead, and Opportunity don't have a natural place for this yet without their own detail pages (Opportunity is Kanban-only, Lead/Account are flat lists with less row real estate); Phase 21's detail pages are the right home for tagging on those three, and the backend is already there waiting for it, no schema/API changes needed when that happens.
+  - Tag colors are a closed set of 6, chosen at creation time — never a free hex picker or a hash-generated color, so the palette stays small and every color stays visually distinct (same reasoning as the dataviz skill's categorical-hue rule, applied here to a non-chart UI element).
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 20: tags/labels [verified]` and pushed to `origin/main`.
+- **Next:** Phase 21 — record detail pages + notes + unified timeline (the biggest remaining gap: Contact/Lead/Opportunity have no detail page at all yet).
+
 ---
 
 ## STUCK

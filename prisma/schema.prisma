@@ -40,6 +40,8 @@ model Tenant {
   calendarConnection CalendarConnection?
   customFieldDefinitions CustomFieldDefinition[]
   customFieldValues      CustomFieldValue[]
+  tags                   Tag[]
+  tagAssignments         TagAssignment[]
 
   @@map("tenants")
 }
@@ -416,4 +418,38 @@ model CustomFieldValue {
   @@unique([definitionId, entityId])
   @@index([tenantId, entityId])
   @@map("custom_field_values")
+}
+
+// Per-tenant tag catalog + many-to-many assignments. entityType is a plain
+// string ("contact"/"account"/"lead"/"opportunity"), same polymorphic
+// convention as Activity/CustomFieldDefinition, so tagging any future entity
+// type is additive.
+model Tag {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  color     String   @default("zinc")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignments TagAssignment[]
+
+  @@unique([tenantId, name])
+  @@map("tags")
+}
+
+model TagAssignment {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  tagId      String   @map("tag_id")
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([tagId, entityId])
+  @@index([tenantId, entityType, entityId])
+  @@map("tag_assignments")
 }
