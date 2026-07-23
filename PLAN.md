@@ -53,9 +53,11 @@ Each phase is scoped to be buildable **and verifiable** within a fraction of one
 - **Phase 12 — n8n Finance Agent reference flow.** Importable workflow JSON + setup guide: `opportunity.closed_won` webhook → create an `Invoice` record via the CRM API (placeholder node marked for a real accounting-tool swap later) → logs the action to the opportunity's timeline. **This completes the full end-to-end mock journey described in the master prompt's §5.** Verify: manual run end-to-end — form submission through to an invoice record appearing on the opportunity.
 - **Phase 13 — Dashboard & reporting.** Pipeline value by stage, stage-to-stage conversion rates, lead-source breakdown, leads-created/deals-closed time series. Verify: seed known data, assert the computed numbers match by hand.
 - **Phase 14 — Lead dedupe matching.** Real matching on email/phone/company with a fuzzy fallback (e.g. trigram similarity in Postgres), enrichment-hook interface (no live provider yet). Verify: tests for exact match, fuzzy match, and no-false-positive cases.
-- **Phase 15 — Real calendar providers.** `GoogleCalendarProvider` and `OutlookCalendarProvider` implementing the Phase-9 interface, behind OAuth. **BLOCKED by design until the operator supplies real OAuth credentials** — will be marked `BLOCKED` in `PROGRESS.md` until then, mock provider remains the default.
+- **Phase 15 — Real calendar providers.** `GoogleCalendarProvider` and `OutlookCalendarProvider` implementing the Phase-9 interface, behind OAuth. **BLOCKED by design until the operator supplies real OAuth credentials** — will be marked `BLOCKED` in `PROGRESS.md` until then, mock provider remains the default. _(Update: the Outlook side is done — real Azure AD credentials arrived and the operator authorized live calls; see PROGRESS.md. Google side remains `BLOCKED` — not yet requested by the operator, and explicitly not to be blocked on.)_
 - **Phase 16 — Demo data & script.** Full demo-tenant seed script with realistic sample data across every module; `DEMO.md` 5-minute walkthrough script. Verify: run the seed on a clean DB, follow the script personally.
 - **Phase 17 — Hardening pass.** Rate limiting on all public endpoints, an audit log for sensitive actions, polish of remaining empty states and error states, finalize `README.md` and deployment docs. Verify: re-run full test suite, manual pass through the demo script end-to-end.
+- **Phase 18 — Accounts.** `Account` model, optional `accountId` on Contact/Opportunity, full session + v1 CRUD, `account.created`/`account.updated` webhook events, list + detail UI, an account picker on the Contact form. **DONE** — see PROGRESS.md's addendum section.
+- **Phases 19 onward — see §7, the v1 completeness audit added by the operator's addendum.** These extend the plan past the original 0–17/18 scope; §7 explains why each was added and in what order.
 - **Later / backlog** — anything surfaced during the above that's real but not urgent gets logged here rather than silently added to scope.
 
 ---
@@ -144,3 +146,88 @@ To keep scope from creeping, the following are **not** being built in v1:
 ## 6. What Happens Next
 
 This document and `PROGRESS.md` are Phase 0's only output. No application code, no `npm init`, no git repository has been created yet. Waiting for operator go-ahead before starting Phase 1.
+
+_(This section describes the state at Phase 0, before any code existed — kept as-is for history. See §7 below for what's next as of the operator's addendum.)_
+
+---
+
+## 7. v1 Completeness Audit (Addendum)
+
+One-time audit against a checklist of common CRM features, run after Phase 18 (Accounts) landed. Settled architecture (tenant-scoping, dual session/API-key auth, provider-interface pattern, event contract) is unchanged by any of this — every ADD below is new tables/routes/screens on top of it, not a rework. Phases are numbered continuing from 18 and ordered so nothing depends on a phase that comes after it.
+
+### Data model & relationships
+
+| Item | Status | Notes |
+|---|---|---|
+| Accounts ↔ Contacts ↔ Opportunities | **COVERED** | Phase 18. |
+| Custom fields per tenant (Contact/Account/Opportunity) | **ADD** — Phase 19 | Tenant-defined field schema (label/type) + per-record values, editable in UI, in API responses. |
+| Tags/labels (Contacts/Accounts/Leads/Opportunities) | **ADD** — Phase 20 | Many-to-many, filterable in list views. |
+| Notes (freeform, timestamped, attributed) | **ADD** — Phase 21 | Needs the record detail pages below to have somewhere to live. |
+| File attachments | **ADD** — Phase 23 | `StorageProvider` interface (local disk default, same pattern as `CalendarProvider`), size cap, content-type allow-list, download-only disposition. |
+
+### Activity & communication tracking
+
+| Item | Status | Notes |
+|---|---|---|
+| Tasks/to-dos | **ADD** — Phase 24 | "My tasks" view + shown on the linked record; needs detail pages (Phase 21) to attach to. |
+| Unified per-record timeline, user-facing | **ADD** — Phase 21 | The `Activity` log exists and is written to correctly (Phases 4/6/7/11/18) but **no record detail page exists at all yet** — Contacts is a flat list, Leads is a flat list, Opportunities is Kanban-only. This is the biggest single gap found: the timeline can't be "surfaced" on a page that doesn't exist. Phase 21 builds Contact/Lead/Opportunity detail pages and renders Activity + notes + tasks + logged emails as one merged, chronological stream on each. |
+| Email logging (manual) | **ADD** — Phase 22 | A "Log an email" action on a Contact, written into the same timeline; designed so a real sync could feed the same table later. |
+| Full inbox sync (IMAP/Gmail/Graph) | **NON-GOAL (v1)** | Same reasoning as the original plan's "no built-in email/marketing campaigns" — real sync is a different, much larger feature (mailbox OAuth, threading, dedup against manual entries) than this product commits to for v1. The manual logging action above is designed so a sync could feed the same table without a schema change, if this is revisited. |
+
+### Sales process
+
+| Item | Status | Notes |
+|---|---|---|
+| Products & price list | **ADD** — Phase 26 | Minimal per-tenant catalog: name, SKU (optional), unit price, active flag. |
+| Quotes | **ADD** — Phase 27 | Depends on Phase 26 (line items reference products). Tied to an Opportunity, computed totals, draft/sent/accepted/declined status, printable view; acceptance can update the Opportunity's value. |
+| Forecasting (weighted pipeline) | **ADD** — Phase 28 | Checked `reports.ts`: `getPipelineValueByStage` is raw value only, not weighted. `Opportunity.probability` exists (0–100, per-opportunity) but nothing multiplies it through, and `PipelineStage` has no default-probability field to weight by stage. Phase 28 adds a `defaultProbability` to `PipelineStage`, a weighted-value dashboard rollup alongside the existing raw one. |
+| Record ownership (`ownerId`, owner picker, "my records" filter) | **PARTIALLY COVERED, rest ADD** — Phase 25 | `Lead.ownerUserId` and `Opportunity.ownerUserId` already exist (Phase 4) and are accepted by their create/update routes — but **no UI ever sets or displays them**: no owner picker, no "my records" filter anywhere, and `Contact`/`Account` have no owner column at all. Phase 25 closes all three gaps in one pass (adds `ownerId` to Contact/Account, ships the picker, ships the filter on every list view). Full territory hierarchies remain a **NON-GOAL (v1)**, per the addendum. |
+
+### Users, roles & permissions
+
+| Item | Status | Notes |
+|---|---|---|
+| Team management (invite/add users) | **ADD** — Phase 29 | No email sending exists, so an admin-sets-initial-password flow (not an emailed invite link) is the v1 shape — consistent with the existing "no built-in email sending" boundary. |
+| Role-based visibility (ADMIN sees all, MEMBER restricted per tenant setting) | **ADD** — Phase 29 | Checked: the `Role` enum (`ADMIN`/`MEMBER`) has existed since Phase 2, but **grep confirms zero enforcement anywhere in the codebase** — every route today lets any authenticated user of a tenant do anything any other member can. Phase 29 adds real server-side enforcement (query-layer, not UI-hidden) plus tests proving a restricted member is rejected on both the session API and the v1 API. Granular per-field permissions remain a **NON-GOAL (v1)**, per the original plan. |
+| Audit log (separate from the Activity timeline) | **COVERED (log itself), rest ADD** — Phase 30 | The `AuditLog` model + `recordAuditLog()` were built in Phase 17 and are already wired into auth/API-key/webhook-endpoint events. What's missing is the admin-only **viewer page** — Phase 30 is a small, focused addition (a page, not new logging plumbing), sequenced after Phase 29 so "admin-only" has real teeth by the time the viewer ships. |
+
+### Automation & integration
+
+| Item | Status | Notes |
+|---|---|---|
+| In-app automation rules | **NON-GOAL (v1)** | n8n already covers general automation (that's the entire premise of this product — CRM as system of record + n8n as the automation layer). A tightly-bounded in-app rule engine (event/time trigger → notify/create-task) would duplicate n8n for the subset of cases simple enough to need it, and the moment a rule needs any real logic, the operator's own n8n instance already does it better. Revisit only if real customer feedback says the "connect n8n" onboarding step itself is the blocker — that's a different problem (onboarding friction) with a different fix (better setup docs), not a reason to build a second workflow engine. |
+| Webhook/API coverage for Accounts | **COVERED** | Phase 18. |
+
+### Reporting & data
+
+| Item | Status | Notes |
+|---|---|---|
+| CSV export (Contacts/Accounts/Leads/Opportunities) | **ADD** — Phase 31 | Tenant-scoped, respects Phase 29's role visibility, each export writes an `AuditLog` entry. Sequenced after Phase 29 (needs real visibility rules to respect) and Phase 30 (so the audit trail it writes to already has a viewer). |
+| Data deletion (per-contact hard delete, GDPR-style) | **ADD** — Phase 32 | Tenant-level cascade delete already works (every table cascades from `Tenant`, since Phase 2) — what's missing is an admin-only, audit-logged **single-contact** hard delete that also removes its notes/activities/attachments rather than orphaning them. |
+
+### Operational readiness
+
+| Item | Status | Notes |
+|---|---|---|
+| Rate limiting across all public endpoints | **COVERED** | Phase 17. |
+| In-app search (header search box, Contacts/Accounts/Leads/Opportunities) | **ADD** — Phase 33 | `pg_trgm` is already enabled (Phase 14) and available to reuse for fuzzy name/company matching in results. Tenant-scoped, respects Phase 29's visibility rules — sequenced after it for the same reason as CSV export. |
+| Deployment (currently localhost-only) | **ADD** — Phase 35 | See below — its own phase with an explicit operator checklist. |
+
+### UI consistency pass — Phase 34
+
+A one-time sweep bringing every **pre-addendum** screen (dashboard, contacts, leads, opportunities, forms, webhooks, API keys, calls, invoices, auth pages) up to the §4-of-the-addendum UI bar that's applied to every phase from Phase 18 onward. Sequenced last among the feature phases, once Phases 19–33 have added most of the new screens that need to match — doing it once at the end avoids re-polishing a screen twice. Before/after screenshots logged in `PROGRESS.md`, per the addendum's requirement.
+
+### Phase 35 — Deployment (Azure)
+
+Targets the operator's existing Azure account. **Recommendation: Azure App Service** (not Container Apps) — App Service takes a Next.js app with a `git push`-style or GitHub Actions deploy with no Dockerfile/container registry to maintain, which matches this project's whole "minimal moving parts for a non-technical operator" philosophy from §1; Container Apps is the right call if this ever needs to scale to multiple regions or run sidecar containers, neither of which applies here. Paired with Azure Database for PostgreSQL (flexible server) for the managed database.
+
+Scope:
+- Environment/secrets handling in Azure (App Service's Application Settings, or Key Vault references if the operator wants that extra layer).
+- Production build + deploy pipeline (GitHub Actions, since the repo's already on GitHub).
+- The webhook `process-due` scheduler finally getting a real trigger — this has been a documented operator-action gap since Phase 7 (`EVENTS.md`), unresolved because there was no production deployment to point a scheduler at. Azure's built-in "WebJob" or a simple Azure Functions timer trigger both work; will pick whichever needs less new surface area once the App Service is actually up.
+- `DEPLOY.md`, written for a non-technical operator, same style as `DEMO.md`.
+- **Expect real `BLOCKED` sub-items here** — creating the actual Azure resources, DNS, and the Outlook app registration's redirect URI update (see PROGRESS.md's Outlook section) all require the operator's own Azure/DNS/Azure-AD access. Phase 35's log entry will state the exact ordered checklist rather than attempting to fake or skip any of it.
+
+### Sequencing summary
+
+Phases 19–35, in dependency order: **19** custom fields → **20** tags → **21** record detail pages + notes + unified timeline → **22** email logging → **23** file attachments → **24** tasks → **25** ownership → **26** products → **27** quotes → **28** forecasting → **29** team management + role enforcement → **30** audit log viewer → **31** CSV export → **32** per-contact hard delete → **33** in-app search → **34** UI consistency pass → **35** Azure deployment.

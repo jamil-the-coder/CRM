@@ -372,6 +372,19 @@ Was `BLOCKED` in Phase 15's original entry pending real OAuth credentials. The o
 - **NEEDS FROM OPERATOR:** click "Connect Outlook Calendar" on the Calls page once, signed in as whichever Microsoft account should own the business's bookable calendar, and approve the consent screen. After that, report back (or just try booking a call) so I can confirm the live round-trip actually works and close this out fully. If anything about the redirect URI needs to change, it's `http://localhost:3000/api/auth/outlook/callback` for local dev — for a real deployment this needs to become `https://<your-deployed-domain>/api/auth/outlook/callback`, registered in the Azure app's Authentication settings, and `OUTLOOK_REDIRECT_URI` updated to match.
 - Committed as `Outlook calendar provider (real, live) [verified: code + redirect; connect step pending operator]` and pushed to `origin/main`.
 
+### Gap-analysis audit — **DONE**
+
+Ran the one-time v1 completeness audit the addendum asked for, against its checklist of common CRM features. Full classification (COVERED/ADD/NON-GOAL, with reasoning for each) is written into `PLAN.md` §7 — not duplicated here to avoid two copies drifting out of sync.
+
+- **Notable finding:** the single biggest gap is that **no Contact/Lead/Opportunity detail page exists at all** — Contacts and Leads are flat lists, Opportunities is Kanban-only. This means the `Activity` timeline (built correctly since Phase 4, and written to by every subsequent phase) has nowhere to be shown to a user today. Phase 21 builds these detail pages and is sequenced early since Notes, Tasks, and Email logging all need somewhere to attach.
+- **Also notable:** `Lead.ownerUserId`/`Opportunity.ownerUserId` have existed since Phase 4 and are already accepted by their APIs, but there's no picker UI and no "my records" filter anywhere — a case of the data model being ahead of the UI. Folded into Phase 25 alongside adding the same column to Contact/Account.
+- **Also notable:** the `Role` enum (`ADMIN`/`MEMBER`) has existed since Phase 2 but has **zero enforcement** anywhere in the codebase (confirmed by grep) — every route currently lets any authenticated tenant member do anything another member can. Phase 29 adds real server-side enforcement.
+- 17 new phases added (19–35), each scoped to one sitting, in dependency order (e.g. products before quotes, ownership/role-enforcement before CSV export and search since both need real visibility rules to respect). A one-time UI consistency pass (Phase 34) and an Azure deployment phase (Phase 35, with an explicit operator checklist) close out the sequence.
+- Two items marked **NON-GOAL (v1)** with reasoning logged: full inbox email sync (same class of scope-cut as the original plan's "no built-in email campaigns" — a real sync is a materially bigger feature than manual logging), and in-app automation rules (n8n already is this product's automation layer; a second rule engine would duplicate it for no benefit).
+- **NEEDS FROM OPERATOR:** none blocking yet — Phase 35 (deployment) is where real operator-action items will surface (Azure resource creation, DNS, the Outlook redirect URI update for production).
+- Committed as `Gap analysis: v1 completeness audit + extended phase plan (19-35)` and pushed to `origin/main`.
+- **Next:** Phase 19 — custom fields per tenant.
+
 ---
 
 ## STUCK
