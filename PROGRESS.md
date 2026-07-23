@@ -572,6 +572,17 @@ A small, focused phase — the `AuditLog` model and `recordAuditLog()` have exis
 - Committed as `Phase 31: CSV export [verified]` and pushed to `origin/main`.
 - **Next:** Phase 32 — per-contact hard delete (GDPR-style).
 
+### Phase 32 — Per-contact hard delete — **DONE**
+
+- **Confirmed a real, latent data-integrity gap while scoping this phase:** `Note`, `Activity`, `Attachment`, `TagAssignment`, `CustomFieldValue`, and `Task` are all polymorphic (`entityType`/`entityId`, no FK, by design — they attach to four different entity types) — which means the **existing, already-shipped plain `DELETE /api/contacts/:id`** (from Phase 4) has never cleaned any of them up. Deleting a contact today silently orphans every note, file, tag, task, and custom-field value ever attached to it. Deliberately left that route untouched (its existing behavior and tests stay exactly as they are — an "additive, don't rewrite what's verified" call) and instead added a **new, separate, admin-only endpoint** for the deliberate compliance action the addendum asked for.
+- `DELETE /api/contacts/:id/hard-delete` (admin-only via `requireAdmin`): in one transaction, removes every polymorphic row pointing at the contact (Note/Activity/Attachment/TagAssignment/Task/CustomFieldValue) plus the Contact itself (which still cascades Lead/Opportunity/EmailLog via their real FKs, unchanged), then deletes each removed attachment's actual file from storage, then writes a `contact.hard_deleted` audit log entry (email, attachment count).
+- **UI:** a "Delete permanently" control on the Contact detail page, visible only to admins, with an inline confirm/cancel step (not a native `window.confirm` — a real two-step UI matching the rest of the app's destructive-action pattern) before the request fires.
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 138/138 (added `hard-delete.test.ts` — the test that actually proves the gap is closed: creates a contact with a note, a tag assignment, a task, a custom field value, and an activity entry, confirms all of them exist, hard-deletes the contact, then confirms **every single one** is gone — not just the contact row — plus a non-admin rejected with 403 and cross-tenant rejected with 404). `npm run build` — clean.
+- A real Playwright pass: created a throwaway contact, used the UI's confirm/cancel flow, confirmed the person and all their linked sections were genuinely gone after deletion (redirected to the Contacts list, no longer present).
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 32: per-contact hard delete [verified]` and pushed to `origin/main`.
+- **Next:** Phase 33 — in-app search.
+
 ---
 
 ## STUCK

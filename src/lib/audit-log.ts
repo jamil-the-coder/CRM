@@ -15,7 +15,8 @@ export type AuditAction =
   | "team.user_removed"
   | "team.role_changed"
   | "team.visibility_setting_changed"
-  | "data.exported";
+  | "data.exported"
+  | "contact.hard_deleted";
 
 /** Best-effort: audit logging must never fail the request it's recording. */
 export async function recordAuditLog(entry: {

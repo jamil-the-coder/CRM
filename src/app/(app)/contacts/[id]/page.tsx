@@ -12,6 +12,7 @@ import { AddNoteForm } from "@/components/add-note-form";
 import { LogEmailForm } from "@/components/log-email-form";
 import { AttachmentsSection } from "@/components/attachments-section";
 import { RecordTasksSection } from "@/components/record-tasks-section";
+import { HardDeleteButton } from "./hard-delete-button";
 import { tagColorClassName } from "@/lib/tag-colors";
 
 export default async function ContactDetailPage({
@@ -46,14 +47,17 @@ export default async function ContactDetailPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-          {contact.firstName} {contact.lastName ?? ""}
-        </h1>
-        <p className="text-sm text-zinc-500">
-          {[contact.email, contact.phone].filter(Boolean).join(" · ") ||
-            "No contact details yet"}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+            {contact.firstName} {contact.lastName ?? ""}
+          </h1>
+          <p className="text-sm text-zinc-500">
+            {[contact.email, contact.phone].filter(Boolean).join(" · ") ||
+              "No contact details yet"}
+          </p>
+        </div>
+        {user!.role === "ADMIN" && <HardDeleteButton contactId={id} />}
       </div>
 
       <Card>
