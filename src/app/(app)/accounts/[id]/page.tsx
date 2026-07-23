@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { RecordTimeline } from "@/components/record-timeline";
 import { AddNoteForm } from "@/components/add-note-form";
+import { AttachmentsSection } from "@/components/attachments-section";
 import { tagColorClassName } from "@/lib/tag-colors";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -34,10 +35,14 @@ export default async function AccountDetailPage({
   });
   if (!account) notFound();
 
-  const [timeline, customFields, tagsByEntity] = await Promise.all([
+  const [timeline, customFields, tagsByEntity, attachments] = await Promise.all([
     getTimeline(tenantId, "account", id),
     getFieldValues(tenantId, "account", id),
     getTagsForEntities(tenantId, "account", [id]),
+    db.attachment.findMany({
+      where: { tenantId, entityType: "account", entityId: id },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
   const tags = tagsByEntity[id] ?? [];
 
@@ -151,6 +156,11 @@ export default async function AccountDetailPage({
         )}
       </div>
 
+      <AttachmentsSection
+        entityType="account"
+        entityId={id}
+        attachments={attachments}
+      />
       <AddNoteForm entityType="account" entityId={id} />
       <RecordTimeline entries={timeline} />
     </div>

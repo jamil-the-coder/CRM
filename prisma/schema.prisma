@@ -44,6 +44,7 @@ model Tenant {
   tagAssignments         TagAssignment[]
   notes                  Note[]
   emailLogs              EmailLog[]
+  attachments            Attachment[]
 
   @@map("tenants")
 }
@@ -500,4 +501,26 @@ model EmailLog {
 
   @@index([tenantId, contactId])
   @@map("email_logs")
+}
+
+// File attachments on any record (Phase 23), stored via a StorageProvider
+// (local disk in dev, same swap-later pattern as CalendarProvider — an Azure
+// Blob provider is a config change, not a rewrite). storageKey is opaque to
+// callers; only the provider that wrote it knows how to read it back.
+model Attachment {
+  id             String   @id @default(cuid())
+  tenantId       String   @map("tenant_id")
+  entityType     String   @map("entity_type")
+  entityId       String   @map("entity_id")
+  fileName       String   @map("file_name")
+  contentType    String   @map("content_type")
+  sizeBytes      Int      @map("size_bytes")
+  storageKey     String   @map("storage_key")
+  uploadedByUserId String? @map("uploaded_by_user_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, entityType, entityId])
+  @@map("attachments")
 }

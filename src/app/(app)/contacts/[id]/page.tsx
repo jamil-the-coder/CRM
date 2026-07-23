@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RecordTimeline } from "@/components/record-timeline";
 import { AddNoteForm } from "@/components/add-note-form";
 import { LogEmailForm } from "@/components/log-email-form";
+import { AttachmentsSection } from "@/components/attachments-section";
 import { tagColorClassName } from "@/lib/tag-colors";
 
 export default async function ContactDetailPage({
@@ -27,10 +28,14 @@ export default async function ContactDetailPage({
   });
   if (!contact) notFound();
 
-  const [timeline, customFields, tagsByEntity] = await Promise.all([
+  const [timeline, customFields, tagsByEntity, attachments] = await Promise.all([
     getTimeline(tenantId, "contact", id),
     getFieldValues(tenantId, "contact", id),
     getTagsForEntities(tenantId, "contact", [id]),
+    db.attachment.findMany({
+      where: { tenantId, entityType: "contact", entityId: id },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
   const tags = tagsByEntity[id] ?? [];
 
@@ -89,6 +94,11 @@ export default async function ContactDetailPage({
         </CardContent>
       </Card>
 
+      <AttachmentsSection
+        entityType="contact"
+        entityId={id}
+        attachments={attachments}
+      />
       <AddNoteForm entityType="contact" entityId={id} />
       <LogEmailForm contactId={id} />
       <RecordTimeline entries={timeline} />

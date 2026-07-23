@@ -447,6 +447,22 @@ The gap analysis's single biggest finding, closed: Contact, Lead, and Opportunit
 - Committed as `Phase 22: email logging [verified]` and pushed to `origin/main`.
 - **Next:** Phase 23 — file attachments (`StorageProvider` interface, local-disk default).
 
+### Phase 23 — File attachments — **DONE**
+
+- Added a `StorageProvider` interface (`save`/`read`/`delete`, keyed by an opaque string) with a `LocalStorageProvider` default (writes under `.storage/attachments/`, gitignored) behind a `getStorageProvider()` factory — the exact same swap-later pattern as `CalendarProvider`: a real Azure Blob provider (the operator's Azure account already has one available) is additive whenever needed, no caller changes.
+- Added `Attachment` (`entityType`/`entityId` — same polymorphic convention as Note/Tag/CustomFieldValue, so it covers Contact/Account/Lead/Opportunity uniformly — `fileName`, `contentType`, `sizeBytes`, `storageKey`, `uploadedByUserId`).
+- `POST /api/attachments` accepts real `multipart/form-data` (Next.js route handlers support `request.formData()` natively), enforces a 10MB size cap and a narrow content-type allow-list (common images/PDF/Office docs/text — no executables or scripts), and validates the target entity belongs to the caller's tenant before writing anything to storage.
+- `GET /api/attachments/:id/download` **always forces `Content-Disposition: attachment` and `Content-Type: application/octet-stream`**, regardless of the file's real type — per the addendum's explicit "never execute or inline-render uploads" requirement, this isn't just an HTTP header nicety, it's the actual security boundary: even if something slipped past the content-type allow-list, the browser is never given a reason to render it inline in this origin.
+- **UI:** one reusable `AttachmentsSection` component (upload input + file list with size, download link, remove) wired identically onto all four detail pages (Contact/Account/Lead/Opportunity) — attachments, unlike email logging, weren't scoped to just Contact in the addendum.
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 107/107 (added `attachments.test.ts`: full upload→list→download→delete round-trip using real `File`/`FormData` objects — not mocked — confirming the downloaded bytes match exactly what was uploaded and that the download response's headers are correct; a disallowed content type rejected; a >10MB file rejected; unauthenticated rejection; cross-tenant upload rejected; cross-tenant download 404s). `npm run build` — clean.
+- A real Playwright pass: uploaded a real file to a Contact's detail page via the native file input, confirmed it appears in the list immediately with its size. Screenshot judged against the UI bar: consistent with the Notes/Log-Email sections directly above it on the same page.
+- **DECISIONS:**
+  - Deliberately did not add image/PDF inline preview — the "download-only disposition" requirement is explicit and non-negotiable per the addendum, so there's no in-browser preview to build in the first place; clicking a file always downloads it.
+  - Local disk storage lives outside the Next.js app's own directories conceptually (`.storage/`, not `public/`) so it's never accidentally served as a static asset by the framework itself.
+- **NEEDS FROM OPERATOR:** none blocking. Flagging for awareness: `.storage/` is local-disk-only — on a real deployment (Phase 35) this needs to become a real `AzureBlobStorageProvider` (or a persistent volume), since most hosts don't guarantee a persistent local filesystem across deploys/restarts. Noted as a Phase 35 dependency, not solved yet.
+- Committed as `Phase 23: file attachments [verified]` and pushed to `origin/main`.
+- **Next:** Phase 24 — tasks/to-dos.
+
 ---
 
 ## STUCK

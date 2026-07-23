@@ -47,6 +47,11 @@ next-env.d.ts
 
 /src/generated/prisma
 
+# local-disk StorageProvider's file store (Phase 23) — uploaded attachments,
+# not project source; a real deployment swaps this for Azure Blob via the
+# same StorageProvider interface, nothing here is meant to be portable.
+/.storage/
+
 # local, machine-specific Claude Code permission overrides — not shared project config
 .claude/settings.local.json
 

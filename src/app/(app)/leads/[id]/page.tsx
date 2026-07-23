@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { RecordTimeline } from "@/components/record-timeline";
 import { AddNoteForm } from "@/components/add-note-form";
+import { AttachmentsSection } from "@/components/attachments-section";
 import { tagColorClassName } from "@/lib/tag-colors";
 
 export default async function LeadDetailPage({
@@ -25,9 +26,13 @@ export default async function LeadDetailPage({
   });
   if (!lead) notFound();
 
-  const [timeline, tagsByEntity] = await Promise.all([
+  const [timeline, tagsByEntity, attachments] = await Promise.all([
     getTimeline(tenantId, "lead", id),
     getTagsForEntities(tenantId, "lead", [id]),
+    db.attachment.findMany({
+      where: { tenantId, entityType: "lead", entityId: id },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
   const tags = tagsByEntity[id] ?? [];
 
@@ -75,6 +80,11 @@ export default async function LeadDetailPage({
         </CardContent>
       </Card>
 
+      <AttachmentsSection
+        entityType="lead"
+        entityId={id}
+        attachments={attachments}
+      />
       <AddNoteForm entityType="lead" entityId={id} />
       <RecordTimeline entries={timeline} />
     </div>
