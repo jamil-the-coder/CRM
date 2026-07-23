@@ -583,6 +583,17 @@ A small, focused phase — the `AuditLog` model and `recordAuditLog()` have exis
 - Committed as `Phase 32: per-contact hard delete [verified]` and pushed to `origin/main`.
 - **Next:** Phase 33 — in-app search.
 
+### Phase 33 — In-app search — **DONE**
+
+- `GET /api/search?q=` — searches Contacts (name/email/company), Accounts (name), Leads (via their contact's name/email), and Opportunities (name) with case-insensitive `contains` matching, respecting both tenant isolation and Phase 29's `getOwnershipVisibilityWhere` (a restricted member's search results are scoped exactly like their list views). Capped at 5 results per entity type; queries under 2 characters return empty rather than hitting the database.
+- **UI:** added a header bar above the main content area (the layout previously had none — just sidebar + main) containing a `<GlobalSearch>` box: debounced (250ms), grouped results by entity type, full keyboard support (↑/↓ to move, Enter to navigate to the highlighted result or the first one, Escape to close) — genuinely keyboard-friendly, not just clickable.
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 142/142 (added `search.test.ts`: matches found across all four entity types by a shared substring, a sub-2-character query returns empty results without querying, cross-tenant isolation confirmed, unauthenticated rejection). `npm run build` — clean.
+- A real Playwright pass against the seeded demo tenant: typed a real contact's first name into the header search box, confirmed the grouped "Contacts" result appeared with the matching email as a sublabel, then drove it entirely by keyboard (arrow down, Enter) and confirmed it navigated to that contact's detail page.
+- **Problem hit and fixed:** the initial implementation called `setGroups([])` synchronously inside the search `useEffect` when the query was too short, which ESLint's `react-hooks/set-state-in-effect` correctly flagged (the same rule caught in Phase 6). Fixed properly — same pattern as Phase 6 — by deriving the empty-state at render time (`displayedGroups`) instead of writing it into state from inside the effect.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 33: in-app search [verified]` and pushed to `origin/main`.
+- **Next:** Phase 34 — UI consistency pass (bring every pre-addendum screen up to the addendum's UI bar in one sweep).
+
 ---
 
 ## STUCK

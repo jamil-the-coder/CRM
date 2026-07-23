@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { LogoutButton } from "./logout-button";
+import { GlobalSearch } from "@/components/global-search";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -56,9 +57,14 @@ export default async function AppLayout({
         </nav>
         <LogoutButton />
       </aside>
-      <main className="flex-1 overflow-y-auto bg-zinc-50 p-8 dark:bg-zinc-950">
-        {children}
-      </main>
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <header className="flex items-center border-b border-zinc-200 bg-white px-8 py-3 print:hidden dark:border-zinc-800 dark:bg-zinc-950">
+          <GlobalSearch />
+        </header>
+        <main className="flex-1 overflow-y-auto bg-zinc-50 p-8 dark:bg-zinc-950">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
