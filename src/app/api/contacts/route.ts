@@ -5,6 +5,7 @@ import { requireSession } from "@/lib/api-auth";
 import { computeDedupeKey, findDuplicateContacts } from "@/lib/dedupe";
 import { enrichContact } from "@/lib/enrichment";
 import { getFieldValuesForEntities, setFieldValues } from "@/lib/custom-fields";
+import { getOwnershipVisibilityWhere } from "@/lib/visibility";
 
 const createContactSchema = z.object({
   firstName: z.string().trim().min(1).max(200),
@@ -23,11 +24,13 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const mine = searchParams.get("mine") === "1";
+  const visibility = await getOwnershipVisibilityWhere(auth.user);
 
   const contacts = await db.contact.findMany({
     where: {
       tenantId: auth.user.tenantId,
       ...(mine ? { ownerUserId: auth.user.id } : {}),
+      ...visibility,
     },
     orderBy: { createdAt: "desc" },
     take: 100,

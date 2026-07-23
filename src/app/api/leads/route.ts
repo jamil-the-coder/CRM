@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { requireSession } from "@/lib/api-auth";
 import { logActivity } from "@/lib/activity";
 import { emitEvent } from "@/lib/webhooks";
+import { getOwnershipVisibilityWhere } from "@/lib/visibility";
 
 const createLeadSchema = z.object({
   contactId: z.string().min(1),
@@ -19,11 +20,13 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const mine = searchParams.get("mine") === "1";
+  const visibility = await getOwnershipVisibilityWhere(auth.user);
 
   const leads = await db.lead.findMany({
     where: {
       tenantId: auth.user.tenantId,
       ...(mine ? { ownerUserId: auth.user.id } : {}),
+      ...visibility,
     },
     orderBy: { createdAt: "desc" },
     take: 100,

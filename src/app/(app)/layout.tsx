@@ -20,6 +20,7 @@ const NAV_LINKS = [
   { href: "/api-keys", label: "API Keys" },
   { href: "/custom-fields", label: "Custom Fields" },
   { href: "/tags", label: "Tags" },
+  { href: "/team", label: "Team" },
 ];
 
 export default async function AppLayout({

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { requireSession } from "@/lib/api-auth";
 import { computeDedupeKey } from "@/lib/dedupe";
 import { getFieldValues, setFieldValues } from "@/lib/custom-fields";
+import { getOwnershipVisibilityWhere } from "@/lib/visibility";
 
 const updateContactSchema = z.object({
   firstName: z.string().trim().min(1).max(200).optional(),
@@ -22,9 +23,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const auth = await requireSession(request);
   if (auth.unauthorized) return auth.unauthorized;
   const { id } = await params;
+  const visibility = await getOwnershipVisibilityWhere(auth.user);
 
   const contact = await db.contact.findFirst({
-    where: { id, tenantId: auth.user.tenantId },
+    where: { id, tenantId: auth.user.tenantId, ...visibility },
   });
   if (!contact) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -47,8 +49,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     );
   }
 
+  const visibility = await getOwnershipVisibilityWhere(auth.user);
   const existing = await db.contact.findFirst({
-    where: { id, tenantId: auth.user.tenantId },
+    where: { id, tenantId: auth.user.tenantId, ...visibility },
   });
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -103,9 +106,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const auth = await requireSession(request);
   if (auth.unauthorized) return auth.unauthorized;
   const { id } = await params;
+  const visibility = await getOwnershipVisibilityWhere(auth.user);
 
   const existing = await db.contact.findFirst({
-    where: { id, tenantId: auth.user.tenantId },
+    where: { id, tenantId: auth.user.tenantId, ...visibility },
   });
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

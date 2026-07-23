@@ -18,10 +18,11 @@ enum Role {
 }
 
 model Tenant {
-  id        String   @id @default(cuid())
-  name      String
-  plan      String   @default("trial")
-  createdAt DateTime @default(now()) @map("created_at")
+  id                       String   @id @default(cuid())
+  name                     String
+  plan                     String   @default("trial")
+  restrictMemberVisibility Boolean  @default(false) @map("restrict_member_visibility")
+  createdAt                DateTime @default(now()) @map("created_at")
 
   users             User[]
   accounts          Account[]

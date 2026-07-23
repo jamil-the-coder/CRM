@@ -10,7 +10,11 @@ export type AuditAction =
   | "api_key.created"
   | "api_key.deleted"
   | "webhook_endpoint.created"
-  | "webhook_endpoint.deleted";
+  | "webhook_endpoint.deleted"
+  | "team.user_added"
+  | "team.user_removed"
+  | "team.role_changed"
+  | "team.visibility_setting_changed";
 
 /** Best-effort: audit logging must never fail the request it's recording. */
 export async function recordAuditLog(entry: {
