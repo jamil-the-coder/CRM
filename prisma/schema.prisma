@@ -47,6 +47,8 @@ model Tenant {
   attachments            Attachment[]
   tasks                  Task[]
   products               Product[]
+  quotes                 Quote[]
+  quoteLines             QuoteLine[]
 
   @@map("tenants")
 }
@@ -173,6 +175,7 @@ model Opportunity {
   lead     Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
   owner    User?     @relation("OpportunityOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
   invoices Invoice[]
+  quotes   Quote[]
 
   @@index([tenantId])
   @@index([tenantId, stage])
@@ -570,8 +573,47 @@ model Product {
   active    Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quoteLines QuoteLine[]
 
   @@index([tenantId])
   @@map("products")
+}
+
+// A quote tied to an Opportunity (Phase 27). Totals are always computed
+// from QuoteLine rows at read time (src/lib/quotes.ts), never cached on the
+// Quote itself — avoids the total silently drifting out of sync with its
+// lines.
+model Quote {
+  id            String   @id @default(cuid())
+  tenantId      String   @map("tenant_id")
+  opportunityId String   @map("opportunity_id")
+  status        String   @default("draft") // "draft" | "sent" | "accepted" | "declined"
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  lines       QuoteLine[]
+
+  @@index([tenantId, opportunityId])
+  @@map("quotes")
+}
+
+model QuoteLine {
+  id          String  @id @default(cuid())
+  tenantId    String  @map("tenant_id")
+  quoteId     String  @map("quote_id")
+  productId   String? @map("product_id")
+  description String
+  quantity    Decimal @default(1) @db.Decimal(10, 2)
+  unitPrice   Decimal @db.Decimal(12, 2) @map("unit_price")
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quote   Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, quoteId])
+  @@map("quote_lines")
 }

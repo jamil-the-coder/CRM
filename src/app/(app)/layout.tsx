@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { href: "/opportunities", label: "Opportunities" },
   { href: "/invoices", label: "Invoices" },
   { href: "/products", label: "Products" },
+  { href: "/quotes", label: "Quotes" },
   { href: "/calls", label: "Calls" },
   { href: "/forms", label: "Forms" },
   { href: "/webhooks", label: "Webhooks" },
@@ -33,7 +34,7 @@ export default async function AppLayout({
 
   return (
     <div className="flex flex-1">
-      <aside className="flex w-56 flex-col border-r border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+      <aside className="flex w-56 flex-col border-r border-zinc-200 bg-white p-4 print:hidden dark:border-zinc-800 dark:bg-zinc-950">
         <div className="mb-6 px-2">
           <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-50">
             {tenant?.name ?? "Workspace"}

@@ -506,6 +506,21 @@ Closes the gap-analysis finding: `Lead.ownerUserId`/`Opportunity.ownerUserId` ex
 - Committed as `Phase 26: products & price list [verified]` and pushed to `origin/main`.
 - **Next:** Phase 27 — quotes (depends on Products for line items).
 
+### Phase 27 — Quotes — **DONE**
+
+- Added `Quote` (tied to an `Opportunity`, `status` draft/sent/accepted/declined) and `QuoteLine` (references a `Product` optionally, or is a free-typed line — `description`/`quantity`/`unitPrice` always stored on the line itself so a quote's wording/pricing at the time it was sent doesn't retroactively change if the product catalog changes later). Total is **always computed from lines at read time** (`src/lib/quotes.ts`), never cached on the `Quote` row — the schema comment states this explicitly so a future change doesn't accidentally introduce a stale cached total.
+- `GET/POST /api/quotes` (list filterable by `?opportunityId=`, create with an array of lines in one request) and `GET/PATCH/DELETE /api/quotes/:id`. Validates every line's `productId` (if set) belongs to the caller's tenant before creating anything.
+- **Accepting a quote updates the linked Opportunity's `value` to the quote's total** and logs a `quote.accepted` Activity entry on the opportunity — exactly the addendum's requirement, and it now shows up in that opportunity's unified timeline (Phase 21) for free.
+- **UI:** a Quotes list page with a create form (opportunity picker, dynamic line-item rows — pick a product to autofill description/price, or type a free-form line, add/remove rows) and a Quote detail page: a clean line-item table with a computed total, status-transition buttons (draft→sent→accepted/declined, declined→draft to reopen), and a **Print button** using the browser's native print dialog with `print:hidden` on the sidebar/status-buttons/print-button itself — genuinely printable/PDF-able (browsers' "Save as PDF" print target), without building a separate PDF-rendering pipeline.
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 124/124 (added `quotes.test.ts`: quote creation with the total computed correctly across multiple lines, full read-back via list and get, **accepting a quote and confirming the opportunity's `value` actually changed in the database**, cross-tenant `productId` on a line rejected, unauthenticated rejection, tenant isolation on read/delete). `npm run build` — clean.
+- A real Playwright pass: created a quote against a real opportunity with a line item, confirmed the total renders correctly formatted, walked it through Sent → Accepted, and confirmed the accepted state disables further status changes (no dangling "mark as X" buttons on a terminal state) and the Print button is present.
+- **DECISIONS:**
+  - No dedicated webhook event for quote status changes (e.g. `quote.accepted`) — the addendum didn't ask for one, and the existing Activity-log entry already gets a real customer-visible effect (the opportunity's timeline). Adding a new webhook event type is cheap to do later (additive, per `EVENTS.md`'s own rule) if an n8n flow ends up needing it.
+  - No PDF-generation library — the print-friendly in-browser view is deliberately the whole "PDF-able" story here, matching a print-then-save-as-PDF workflow rather than a server-rendered PDF file.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 27: quotes [verified]` and pushed to `origin/main`.
+- **Next:** Phase 28 — forecasting (weighted pipeline).
+
 ---
 
 ## STUCK
