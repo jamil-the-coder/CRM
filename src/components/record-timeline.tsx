@@ -34,13 +34,15 @@ export function RecordTimeline({ entries }: { entries: TimelineEntry[] }) {
               <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
                 {entry.kind === "note"
                   ? `Note${entry.authorEmail ? ` from ${entry.authorEmail}` : ""}`
-                  : formatActivityType(entry.type)}
+                  : entry.kind === "email"
+                    ? `Email ${entry.direction === "inbound" ? "received" : "sent"} — ${entry.subject}`
+                    : formatActivityType(entry.type)}
               </p>
               <p className="shrink-0 text-xs text-zinc-500">
                 {entry.createdAt.toLocaleString()}
               </p>
             </div>
-            {entry.kind === "note" ? (
+            {entry.kind === "note" || entry.kind === "email" ? (
               <p className="mt-1 text-sm whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">
                 {entry.body}
               </p>

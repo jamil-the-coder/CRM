@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { RecordTimeline } from "@/components/record-timeline";
 import { AddNoteForm } from "@/components/add-note-form";
+import { LogEmailForm } from "@/components/log-email-form";
 import { tagColorClassName } from "@/lib/tag-colors";
 
 export default async function ContactDetailPage({
@@ -89,6 +90,7 @@ export default async function ContactDetailPage({
       </Card>
 
       <AddNoteForm entityType="contact" entityId={id} />
+      <LogEmailForm contactId={id} />
       <RecordTimeline entries={timeline} />
     </div>
   );

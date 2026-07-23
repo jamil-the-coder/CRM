@@ -14,6 +14,14 @@ export type TimelineEntry =
       body: string;
       authorEmail: string | null;
       createdAt: Date;
+    }
+  | {
+      kind: "email";
+      id: string;
+      direction: string;
+      subject: string;
+      body: string;
+      createdAt: Date;
     };
 
 /**
@@ -28,7 +36,7 @@ export async function getTimeline(
   entityType: string,
   entityId: string,
 ): Promise<TimelineEntry[]> {
-  const [activities, notes] = await Promise.all([
+  const [activities, notes, emailLogs] = await Promise.all([
     db.activity.findMany({
       where: { tenantId, entityType, entityId },
       orderBy: { createdAt: "desc" },
@@ -38,6 +46,12 @@ export async function getTimeline(
       orderBy: { createdAt: "desc" },
       include: { author: true },
     }),
+    entityType === "contact"
+      ? db.emailLog.findMany({
+          where: { tenantId, contactId: entityId },
+          orderBy: { occurredAt: "desc" },
+        })
+      : Promise.resolve([]),
   ]);
 
   const entries: TimelineEntry[] = [
@@ -54,6 +68,14 @@ export async function getTimeline(
       body: n.body,
       authorEmail: n.author?.email ?? null,
       createdAt: n.createdAt,
+    })),
+    ...emailLogs.map((e): TimelineEntry => ({
+      kind: "email",
+      id: e.id,
+      direction: e.direction,
+      subject: e.subject,
+      body: e.body,
+      createdAt: e.occurredAt,
     })),
   ];
 

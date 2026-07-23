@@ -43,6 +43,7 @@ model Tenant {
   tags                   Tag[]
   tagAssignments         TagAssignment[]
   notes                  Note[]
+  emailLogs              EmailLog[]
 
   @@map("tenants")
 }
@@ -109,6 +110,7 @@ model Contact {
   account       Account?      @relation(fields: [accountId], references: [id], onDelete: SetNull)
   leads         Lead[]
   opportunities Opportunity[]
+  emailLogs     EmailLog[]
 
   @@index([tenantId])
   @@index([tenantId, dedupeKey])
@@ -475,4 +477,27 @@ model Note {
 
   @@index([tenantId, entityType, entityId])
   @@map("notes")
+}
+
+// Manual email logging on a Contact (Phase 22) — a "Log an email" action,
+// not a real inbox sync (explicit v1 non-goal, see PLAN.md §7). Deliberately
+// the same shape a real IMAP/Gmail/Graph sync would populate later, so that
+// feature (if ever built) can write into this same table without a schema
+// change — the manual action and a future sync are the same data source
+// from the timeline's point of view.
+model EmailLog {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  contactId  String   @map("contact_id")
+  direction  String // "inbound" | "outbound"
+  subject    String
+  body       String
+  occurredAt DateTime @map("occurred_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, contactId])
+  @@map("email_logs")
 }

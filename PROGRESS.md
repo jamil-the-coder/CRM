@@ -435,6 +435,18 @@ The gap analysis's single biggest finding, closed: Contact, Lead, and Opportunit
 - Committed as `Phase 21: record detail pages + notes + unified timeline [verified]` and pushed to `origin/main`.
 - **Next:** Phase 22 — email logging (manual "Log an email" action on a Contact, feeding the same timeline).
 
+### Phase 22 — Email logging — **DONE**
+
+- Added `EmailLog` (`contactId`, `direction` inbound/outbound, `subject`, `body`, `occurredAt`) — deliberately shaped the way a real IMAP/Gmail/Graph sync would populate it later, per the addendum's own framing: "designed so a sync could later feed the same table." Full inbox sync itself stays a **NON-GOAL (v1)** exactly as `PLAN.md` §7 already recorded.
+- `POST /api/email-logs` (session-authed), validating the contact belongs to the caller's tenant.
+- Extended `getTimeline()` to merge in a contact's `EmailLog` rows (sorted by `occurredAt`, not `createdAt`, so a backdated/logged-late email sorts by when it actually happened) alongside Activity and Notes — genuinely three sources merged now, not two.
+- **UI:** a `LogEmailForm` component (direction select, subject, body) added to the Contact detail page only, per the addendum's exact scope ("a manual 'Log an email' action on a Contact"). `RecordTimeline` renders email entries as `Email sent/received — <subject>` with the body underneath, visually consistent with how notes render.
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 101/101 (added `email-logs.test.ts`: logging an email and confirming it surfaces correctly in `getTimeline()`, unauthenticated rejection, cross-tenant `contactId` rejection). `npm run build` — clean.
+- A real Playwright pass on the Contact detail page: logged an outbound email, confirmed it appears correctly formatted in the timeline alongside existing notes. **Caught and fixed a test-script bug, not a product bug**, along the way: the page now has two `<textarea>` elements (Add Note, Log Email) and my first script filled the wrong one — the form's own native `required` validation correctly blocked the resulting empty submission, which is exactly what should happen; fixed the test to target the right textarea and re-verified.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 22: email logging [verified]` and pushed to `origin/main`.
+- **Next:** Phase 23 — file attachments (`StorageProvider` interface, local-disk default).
+
 ---
 
 ## STUCK
