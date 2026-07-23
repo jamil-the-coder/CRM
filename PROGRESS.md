@@ -653,6 +653,27 @@ This is the last phase in the gap-analysis plan (`PLAN.md` §7), so completing i
 
 ---
 
+### Production deployment — end-to-end verification — **DONE (webhook delivery + health confirmed); cron run genuinely unconfirmed, needs operator**
+
+Operator completed the full Vercel + Neon + Outlook + GitHub Actions setup described in `DEPLOY.md` (repo imported and live at `https://crm-beta-rose.vercel.app`, all 7 env vars set, Outlook redirect URI updated on both sides, `APP_BASE_URL`/`WEBHOOK_PROCESSOR_SECRET` added as GitHub repo secrets) and asked for an independent end-to-end verification rather than taking the setup on faith.
+
+- **Health check:** `GET https://crm-beta-rose.vercel.app/api/health` → `{"status":"ok",...}`. Confirmed directly, not just trusting the operator's earlier report.
+- **Real webhook delivery, proven against the live URL, not simulated:**
+  1. Created a disposable verification tenant on production via `POST /api/auth/signup` (`Deploy Verification (delete me)`, `deploy-verify-2026-07-23@example.test`).
+  2. Got a real public HTTP receiver from webhook.site (an ordinary third-party request-inspection tool — not a CRM dependency, used only as a disposable test target).
+  3. Added it as a webhook endpoint via `POST /api/webhook-endpoints`, created a contact, then created a lead against it via the real, live API (`POST /api/leads`) to fire a genuine `lead.created` event.
+  4. Queried the CRM's own delivery log (`GET /api/webhook-endpoints`) rather than trusting the receiving side: the delivery row shows `status: "success"`, `attempts: 1`, `lastResponseStatus: 200`, `lastError: null` — i.e., the live Vercel deployment genuinely made a real outbound signed HTTPS request over the internet and got a real 200 back. This is a stronger check than the receiving-service inspection alone, since it confirms what the CRM itself recorded, not just what a third party claims to have received.
+  5. Cleaned up: deleted the test webhook endpoint (`DELETE /api/webhook-endpoints/:id`) and logged out. **Did not** delete the verification tenant/contact/lead/user themselves — there is no tenant-hard-delete endpoint in this app (only the Phase 32 per-contact hard delete exists), so this throwaway tenant will remain in the production Neon database until the operator removes it manually (e.g. via Neon's SQL console) or asks for a tenant-delete endpoint to be built. Flagging this explicitly rather than silently leaving unexplained rows in a real customer-facing database: tenant id `cmrxpfkkv000104ji62d061ke`, user `deploy-verify-2026-07-23@example.test`.
+- **GitHub Actions cron workflow — could NOT be confirmed as actually run yet:**
+  - Checked the real run history via GitHub's public API (`GET /repos/jamil-the-coder/CRM/actions/workflows/webhook-cron.yml/runs`) twice, several minutes apart — `total_count: 0` both times, despite the workflow showing as `state: "active"` and the repo secrets already being in place.
+  - This matches a well-documented GitHub Actions behavior, not a bug in the workflow itself: a newly added `schedule:`-triggered workflow can take up to roughly an hour before its very first scheduled run actually fires, and runs can be further delayed during high load.
+  - I have no GitHub credentials/token for this repo, so I could not force a `workflow_dispatch` run via the API myself (dispatching a workflow requires write auth I don't have and shouldn't fabricate).
+  - **NEEDS FROM OPERATOR:** manually click **Run workflow** on the "Webhook retry ping" workflow under the repo's Actions tab (exactly the manual-test step already described in `DEPLOY.md` §5) and confirm it returns success rather than a 401 — that's the one remaining unverified piece of the deployment. If it 401s, the two GitHub secrets (`APP_BASE_URL`, `WEBHOOK_PROCESSOR_SECRET`) don't match what's set in Vercel and need to be re-checked for an exact match (no trailing slash on `APP_BASE_URL`, identical secret value).
+- **Overall verdict:** the deployment itself is real and working — health check, signup/login (operator-confirmed), and a genuine end-to-end webhook delivery all independently confirmed against the live production URL. The only open item is confirming the cron workflow's first run, which needs one manual click from the operator since I have no way to trigger or observe a private GitHub Actions run without their credentials.
+- Not a separate commit — no code changed, this was a live verification pass against already-deployed infrastructure; logged here per the same standard used for the Neon migration entry above.
+
+---
+
 ## STUCK
 
 _(none yet)_
