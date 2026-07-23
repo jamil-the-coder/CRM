@@ -7,17 +7,24 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AccountPicker } from "@/components/account-picker";
+import {
+  CustomFieldsInputs,
+  type CustomFieldDefinition,
+} from "@/components/custom-fields-inputs";
 
 export function NewContactForm({
   accounts,
+  customFieldDefinitions,
 }: {
   accounts: { id: string; name: string }[];
+  customFieldDefinitions: CustomFieldDefinition[];
 }) {
   const router = useRouter();
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
   const [accountId, setAccountId] = useState("");
+  const [customFields, setCustomFields] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -34,6 +41,8 @@ export function NewContactForm({
         email: email || undefined,
         company: company || undefined,
         accountId: accountId || undefined,
+        customFields:
+          Object.keys(customFields).length > 0 ? customFields : undefined,
       }),
     });
 
@@ -48,6 +57,7 @@ export function NewContactForm({
     setEmail("");
     setCompany("");
     setAccountId("");
+    setCustomFields({});
     setSubmitting(false);
     router.refresh();
   }
@@ -92,6 +102,13 @@ export function NewContactForm({
               onChange={setAccountId}
             />
           </div>
+          <CustomFieldsInputs
+            definitions={customFieldDefinitions}
+            values={customFields}
+            onChange={(key, value) =>
+              setCustomFields((prev) => ({ ...prev, [key]: value }))
+            }
+          />
           <Button type="submit" disabled={submitting}>
             {submitting ? "Adding…" : "Add contact"}
           </Button>

@@ -3,9 +3,11 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireApiKey } from "@/lib/api-key-auth";
 import { emitEvent } from "@/lib/webhooks";
+import { getFieldValues, setFieldValues } from "@/lib/custom-fields";
 
 const updateAccountSchema = z.object({
   name: z.string().trim().min(1).max(200).optional(),
+  customFields: z.record(z.string(), z.string().nullable()).optional(),
 });
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -25,7 +27,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   if (!account) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  return NextResponse.json({ account });
+  const customFields = await getFieldValues(auth.tenantId, "account", id);
+  return NextResponse.json({ account: { ...account, customFields } });
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
@@ -49,8 +52,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const account = await db.account.update({ where: { id }, data: parsed.data });
+  const { customFields, ...accountFields } = parsed.data;
+  const account = await db.account.update({ where: { id }, data: accountFields });
   await emitEvent(auth.tenantId, "account.updated", { account });
+  if (customFields) {
+    await setFieldValues(auth.tenantId, "account", id, customFields);
+  }
+  const updatedCustomFields = await getFieldValues(auth.tenantId, "account", id);
 
-  return NextResponse.json({ account });
+  return NextResponse.json({
+    account: { ...account, customFields: updatedCustomFields },
+  });
 }

@@ -6,10 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  CustomFieldsInputs,
+  type CustomFieldDefinition,
+} from "@/components/custom-fields-inputs";
 
-export function NewAccountForm() {
+export function NewAccountForm({
+  customFieldDefinitions,
+}: {
+  customFieldDefinitions: CustomFieldDefinition[];
+}) {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [customFields, setCustomFields] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -21,7 +30,11 @@ export function NewAccountForm() {
     const response = await fetch("/api/accounts", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({
+        name,
+        customFields:
+          Object.keys(customFields).length > 0 ? customFields : undefined,
+      }),
     });
 
     if (!response.ok) {
@@ -32,6 +45,7 @@ export function NewAccountForm() {
     }
 
     setName("");
+    setCustomFields({});
     setSubmitting(false);
     router.refresh();
   }
@@ -52,6 +66,13 @@ export function NewAccountForm() {
               onChange={(e) => setName(e.target.value)}
             />
           </div>
+          <CustomFieldsInputs
+            definitions={customFieldDefinitions}
+            values={customFields}
+            onChange={(key, value) =>
+              setCustomFields((prev) => ({ ...prev, [key]: value }))
+            }
+          />
           <Button type="submit" disabled={submitting}>
             {submitting ? "Adding…" : "Add account"}
           </Button>

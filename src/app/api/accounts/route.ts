@@ -3,9 +3,11 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/api-auth";
 import { emitEvent } from "@/lib/webhooks";
+import { getFieldValuesForEntities, setFieldValues } from "@/lib/custom-fields";
 
 const createAccountSchema = z.object({
   name: z.string().trim().min(1).max(200),
+  customFields: z.record(z.string(), z.string()).optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -17,7 +19,17 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: "desc" },
     take: 100,
   });
-  return NextResponse.json({ accounts });
+  const customFieldsByEntity = await getFieldValuesForEntities(
+    auth.user.tenantId,
+    "account",
+    accounts.map((a) => a.id),
+  );
+  return NextResponse.json({
+    accounts: accounts.map((a) => ({
+      ...a,
+      customFields: customFieldsByEntity[a.id] ?? {},
+    })),
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -34,10 +46,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const { customFields, ...accountData } = parsed.data;
   const account = await db.account.create({
-    data: { tenantId, ...parsed.data },
+    data: { tenantId, ...accountData },
   });
   await emitEvent(tenantId, "account.created", { account });
+  if (customFields) {
+    await setFieldValues(tenantId, "account", account.id, customFields);
+  }
+  const savedCustomFields = customFields
+    ? (await getFieldValuesForEntities(tenantId, "account", [account.id]))[
+        account.id
+      ] ?? {}
+    : {};
 
-  return NextResponse.json({ account }, { status: 201 });
+  return NextResponse.json(
+    { account: { ...account, customFields: savedCustomFields } },
+    { status: 201 },
+  );
 }

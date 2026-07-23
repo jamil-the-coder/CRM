@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireApiKey } from "@/lib/api-key-auth";
 import { computeDedupeKey } from "@/lib/dedupe";
+import { getFieldValues, setFieldValues } from "@/lib/custom-fields";
 
 const updateContactSchema = z.object({
   firstName: z.string().trim().min(1).max(200).optional(),
@@ -11,6 +12,7 @@ const updateContactSchema = z.object({
   phone: z.string().trim().max(50).nullable().optional(),
   company: z.string().trim().max(200).nullable().optional(),
   accountId: z.string().min(1).nullable().optional(),
+  customFields: z.record(z.string(), z.string().nullable()).optional(),
 });
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -26,7 +28,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   if (!contact) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  return NextResponse.json({ contact });
+  const customFields = await getFieldValues(auth.tenantId, "contact", id);
+  return NextResponse.json({ contact: { ...contact, customFields } });
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
@@ -62,10 +65,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
   }
 
-  const merged = { ...existing, ...parsed.data };
+  const { customFields, ...contactFields } = parsed.data;
+  const merged = { ...existing, ...contactFields };
   const contact = await db.contact.update({
     where: { id },
-    data: { ...parsed.data, dedupeKey: computeDedupeKey(merged) },
+    data: { ...contactFields, dedupeKey: computeDedupeKey(merged) },
   });
-  return NextResponse.json({ contact });
+  if (customFields) {
+    await setFieldValues(auth.tenantId, "contact", id, customFields);
+  }
+  const updatedCustomFields = await getFieldValues(auth.tenantId, "contact", id);
+  return NextResponse.json({
+    contact: { ...contact, customFields: updatedCustomFields },
+  });
 }

@@ -385,6 +385,23 @@ Ran the one-time v1 completeness audit the addendum asked for, against its check
 - Committed as `Gap analysis: v1 completeness audit + extended phase plan (19-35)` and pushed to `origin/main`.
 - **Next:** Phase 19 — custom fields per tenant.
 
+### Phase 19 — Custom fields per tenant — **DONE**
+
+- Added `CustomFieldDefinition` (tenant-scoped field schema: `entityType` — a plain string `"contact"|"account"|"opportunity"`, mirroring the existing `Activity.entityType` convention rather than inventing a new polymorphic-relation pattern — `key`, `label`, `type` text/number/date/select, `options` for select) and `CustomFieldValue` (one row per definition+entity, upserted). Fully additive migration.
+- `src/lib/custom-fields.ts`: `getFieldDefinitions`, `getFieldValues`/`getFieldValuesForEntities` (batched, for list views — one query instead of N), and `setFieldValues` (lenient: silently ignores any key that doesn't match an existing definition for that tenant+entityType, so a slightly-stale n8n flow posting an old field list doesn't 400 the whole request).
+- Definitions API: `/api/custom-fields` (session-authed GET/POST, optional `?entityType=` filter) and `/api/custom-fields/:id` (DELETE, tenant-scoped 404-not-403). `select` fields are rejected with 400 if they have no options.
+- Wired `customFields` (an optional `Record<string,string>` in the request body) into **all 8** Contact/Account/Opportunity create+update routes (session and v1 surfaces) — every one now accepts, persists, and returns custom field values alongside the record, including in list responses (batched lookup, not N+1).
+- **UI:** a new Custom Fields settings page (define a field: entity type, label, key, type, options for select; remove a field) and a reusable `<CustomFieldsInputs>` component that renders the right input type per definition, wired into both the Contact and Account creation forms so new fields show up immediately with no further code change — exactly the "adapt without a code change" goal from the addendum.
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 88/88 (added `custom-fields.test.ts`: definition CRUD, select-with-no-options rejected, unauthenticated rejection, tenant isolation on deleting a definition, and a full round-trip test — create a select-type field, create a Contact with a value plus one unknown/ignored key, confirm the value shows up correctly on GET/list/PATCH, confirm the unknown key was silently dropped). `npm run build` — clean, all new routes present.
+- A real Playwright pass (logged in as the seeded demo admin, to avoid the daily signup rate limit from all of tonight's testing): created a text field on Contact, confirmed it appears in the Custom Fields list, and confirmed the Contacts page's quick-add form immediately rendered the new field with no restart/rebuild needed. Screenshots judged against the addendum's UI bar: consistent Card/list/Badge patterns matching every pre-existing page, no visual defects.
+- **DECISIONS:**
+  - No custom fields on Lead — the addendum's checklist only asked for Contact/Account/Opportunity.
+  - Values stored as plain nullable strings (not typed columns) — the `type` on the definition is presentation/validation metadata for the UI, not a schema-level constraint; this keeps `CustomFieldValue` a single simple table regardless of how many field types exist, matching the "config change, not a rewrite" philosophy used elsewhere (e.g. `CalendarProvider`).
+  - List-view display of custom field values on the flat Contacts/Accounts lists was deliberately not added — Phase 21 (record detail pages) is where these values will actually be shown/edited on existing records; adding it to the flat list now would be replaced almost immediately.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 19: custom fields per tenant [verified]` and pushed to `origin/main`.
+- **Next:** Phase 20 — tags/labels.
+
 ---
 
 ## STUCK

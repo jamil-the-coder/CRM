@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { requireApiKey } from "@/lib/api-key-auth";
 import { logActivity } from "@/lib/activity";
 import { emitEvent } from "@/lib/webhooks";
+import { getFieldValuesForEntities, setFieldValues } from "@/lib/custom-fields";
 
 const createOpportunitySchema = z.object({
   contactId: z.string().min(1),
@@ -16,6 +17,7 @@ const createOpportunitySchema = z.object({
   probability: z.number().int().min(0).max(100).optional(),
   ownerUserId: z.string().min(1).nullable().optional(),
   expectedCloseDate: z.string().datetime().nullable().optional(),
+  customFields: z.record(z.string(), z.string()).optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -28,7 +30,17 @@ export async function GET(request: NextRequest) {
     take: 100,
     include: { contact: true },
   });
-  return NextResponse.json({ opportunities });
+  const customFieldsByEntity = await getFieldValuesForEntities(
+    auth.tenantId,
+    "opportunity",
+    opportunities.map((o) => o.id),
+  );
+  return NextResponse.json({
+    opportunities: opportunities.map((o) => ({
+      ...o,
+      customFields: customFieldsByEntity[o.id] ?? {},
+    })),
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -44,7 +56,7 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
-  const { contactId, leadId, accountId, expectedCloseDate, ...rest } =
+  const { contactId, leadId, accountId, expectedCloseDate, customFields, ...rest } =
     parsed.data;
 
   const contact = await db.contact.findFirst({
@@ -97,6 +109,17 @@ export async function POST(request: NextRequest) {
     { stage: opportunity.stage },
   );
   await emitEvent(tenantId, "opportunity.created", { opportunity });
+  if (customFields) {
+    await setFieldValues(tenantId, "opportunity", opportunity.id, customFields);
+  }
+  const savedCustomFields = customFields
+    ? (await getFieldValuesForEntities(tenantId, "opportunity", [
+        opportunity.id,
+      ]))[opportunity.id] ?? {}
+    : {};
 
-  return NextResponse.json({ opportunity }, { status: 201 });
+  return NextResponse.json(
+    { opportunity: { ...opportunity, customFields: savedCustomFields } },
+    { status: 201 },
+  );
 }

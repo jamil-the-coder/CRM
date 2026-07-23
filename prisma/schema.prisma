@@ -38,6 +38,8 @@ model Tenant {
   pipelineStages    PipelineStage[]
   invoices          Invoice[]
   calendarConnection CalendarConnection?
+  customFieldDefinitions CustomFieldDefinition[]
+  customFieldValues      CustomFieldValue[]
 
   @@map("tenants")
 }
@@ -374,4 +376,44 @@ model CalendarConnection {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("calendar_connections")
+}
+
+// Tenant-defined extra fields on Contact/Account/Opportunity, so a business
+// can adapt the CRM to its own data without a code change. entityType is a
+// plain string ("contact"/"account"/"opportunity") rather than a relation —
+// mirrors the existing Activity.entityType/entityId pattern (Phase 4) rather
+// than inventing a new polymorphic-relation convention.
+model CustomFieldDefinition {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  entityType String  @map("entity_type")
+  key       String
+  label     String
+  type      String // "text" | "number" | "date" | "select"
+  options   Json? // for type "select": string[]
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  values CustomFieldValue[]
+
+  @@unique([tenantId, entityType, key])
+  @@index([tenantId, entityType])
+  @@map("custom_field_definitions")
+}
+
+model CustomFieldValue {
+  id           String   @id @default(cuid())
+  tenantId     String   @map("tenant_id")
+  definitionId String   @map("definition_id")
+  entityId     String   @map("entity_id")
+  value        String?
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant     Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  definition CustomFieldDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+
+  @@unique([definitionId, entityId])
+  @@index([tenantId, entityId])
+  @@map("custom_field_values")
 }

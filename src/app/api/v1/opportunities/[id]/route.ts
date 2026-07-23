@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { requireApiKey } from "@/lib/api-key-auth";
 import { logActivity } from "@/lib/activity";
 import { emitEvent } from "@/lib/webhooks";
+import { getFieldValues, setFieldValues } from "@/lib/custom-fields";
 
 const updateOpportunitySchema = z.object({
   name: z.string().trim().min(1).max(300).optional(),
@@ -14,6 +15,7 @@ const updateOpportunitySchema = z.object({
   ownerUserId: z.string().min(1).nullable().optional(),
   accountId: z.string().min(1).nullable().optional(),
   expectedCloseDate: z.string().datetime().nullable().optional(),
+  customFields: z.record(z.string(), z.string().nullable()).optional(),
 });
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -30,7 +32,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   if (!opportunity) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  return NextResponse.json({ opportunity });
+  const customFields = await getFieldValues(auth.tenantId, "opportunity", id);
+  return NextResponse.json({ opportunity: { ...opportunity, customFields } });
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
@@ -65,7 +68,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
   }
 
-  const { expectedCloseDate, ...rest } = parsed.data;
+  const { expectedCloseDate, customFields, ...rest } = parsed.data;
   const stageChanged =
     rest.stage !== undefined && rest.stage !== existing.stage;
   const isNowClosed =
@@ -123,5 +126,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
   }
 
-  return NextResponse.json({ opportunity });
+  if (customFields) {
+    await setFieldValues(tenantId, "opportunity", id, customFields);
+  }
+  const updatedCustomFields = await getFieldValues(tenantId, "opportunity", id);
+
+  return NextResponse.json({
+    opportunity: { ...opportunity, customFields: updatedCustomFields },
+  });
 }

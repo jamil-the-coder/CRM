@@ -6,11 +6,17 @@ import { NewAccountForm } from "./new-account-form";
 
 export default async function AccountsPage() {
   const user = await getCurrentUser();
-  const accounts = await db.account.findMany({
-    where: { tenantId: user!.tenantId },
-    orderBy: { createdAt: "desc" },
-    include: { _count: { select: { contacts: true, opportunities: true } } },
-  });
+  const [accounts, customFieldDefinitions] = await Promise.all([
+    db.account.findMany({
+      where: { tenantId: user!.tenantId },
+      orderBy: { createdAt: "desc" },
+      include: { _count: { select: { contacts: true, opportunities: true } } },
+    }),
+    db.customFieldDefinition.findMany({
+      where: { tenantId: user!.tenantId, entityType: "account" },
+      orderBy: { sortOrder: "asc" },
+    }),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -24,7 +30,7 @@ export default async function AccountsPage() {
         </p>
       </div>
 
-      <NewAccountForm />
+      <NewAccountForm customFieldDefinitions={customFieldDefinitions} />
 
       {accounts.length === 0 ? (
         <Card>

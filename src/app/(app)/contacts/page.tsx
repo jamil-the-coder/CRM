@@ -6,7 +6,7 @@ import { NewContactForm } from "./new-contact-form";
 
 export default async function ContactsPage() {
   const user = await getCurrentUser();
-  const [contacts, accounts] = await Promise.all([
+  const [contacts, accounts, customFieldDefinitions] = await Promise.all([
     db.contact.findMany({
       where: { tenantId: user!.tenantId },
       orderBy: { createdAt: "desc" },
@@ -16,6 +16,10 @@ export default async function ContactsPage() {
       where: { tenantId: user!.tenantId },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
+    }),
+    db.customFieldDefinition.findMany({
+      where: { tenantId: user!.tenantId, entityType: "contact" },
+      orderBy: { sortOrder: "asc" },
     }),
   ]);
 
@@ -30,7 +34,10 @@ export default async function ContactsPage() {
         </p>
       </div>
 
-      <NewContactForm accounts={accounts} />
+      <NewContactForm
+        accounts={accounts}
+        customFieldDefinitions={customFieldDefinitions}
+      />
 
       {contacts.length === 0 ? (
         <Card>

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { requireSession } from "@/lib/api-auth";
 import { computeDedupeKey, findDuplicateContacts } from "@/lib/dedupe";
 import { enrichContact } from "@/lib/enrichment";
+import { getFieldValuesForEntities, setFieldValues } from "@/lib/custom-fields";
 
 const createContactSchema = z.object({
   firstName: z.string().trim().min(1).max(200),
@@ -12,6 +13,7 @@ const createContactSchema = z.object({
   phone: z.string().trim().max(50).optional(),
   company: z.string().trim().max(200).optional(),
   accountId: z.string().min(1).optional(),
+  customFields: z.record(z.string(), z.string()).optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -23,7 +25,17 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: "desc" },
     take: 100,
   });
-  return NextResponse.json({ contacts });
+  const customFieldsByEntity = await getFieldValuesForEntities(
+    auth.user.tenantId,
+    "contact",
+    contacts.map((c) => c.id),
+  );
+  return NextResponse.json({
+    contacts: contacts.map((c) => ({
+      ...c,
+      customFields: customFieldsByEntity[c.id] ?? {},
+    })),
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -53,22 +65,34 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const duplicates = await findDuplicateContacts(tenantId, parsed.data);
+  const { customFields, ...contactData } = parsed.data;
+  const duplicates = await findDuplicateContacts(tenantId, contactData);
 
   const contact = await db.contact.create({
     data: {
       tenantId,
-      ...parsed.data,
-      dedupeKey: computeDedupeKey(parsed.data),
+      ...contactData,
+      dedupeKey: computeDedupeKey(contactData),
     },
   });
   await enrichContact(contact.id, {
     email: contact.email,
     company: contact.company,
   });
+  if (customFields) {
+    await setFieldValues(tenantId, "contact", contact.id, customFields);
+  }
+  const savedCustomFields = customFields
+    ? (await getFieldValuesForEntities(tenantId, "contact", [contact.id]))[
+        contact.id
+      ] ?? {}
+    : {};
 
   return NextResponse.json(
-    { contact, possibleDuplicates: duplicates.map((d) => d.id) },
+    {
+      contact: { ...contact, customFields: savedCustomFields },
+      possibleDuplicates: duplicates.map((d) => d.id),
+    },
     { status: 201 },
   );
 }
