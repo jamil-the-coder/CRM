@@ -561,6 +561,17 @@ A small, focused phase — the `AuditLog` model and `recordAuditLog()` have exis
 - Committed as `Phase 30: audit log viewer [verified]` and pushed to `origin/main`.
 - **Next:** Phase 31 — CSV export.
 
+### Phase 31 — CSV export — **DONE**
+
+- `src/lib/csv.ts`: a small, dependency-free CSV serializer (quotes/escapes cells containing commas, quotes, or newlines) — didn't reach for a library for something this small.
+- `GET /api/export/:entity` (Contacts/Accounts/Leads/Opportunities), session-authed, applying the **same `getOwnershipVisibilityWhere` filter from Phase 29** — a restricted member's export contains only their own records, exactly like their list view. Every export writes a `data.exported` audit log entry (`entity`, `rowCount`) — visible on Phase 30's viewer.
+- **UI:** an "Export CSV" link next to the existing filters on all four list pages, styled identically to every other secondary action.
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 135/135 (added `export.test.ts`: a real contact's data round-trips correctly into the CSV body, the response headers are correct (`text/csv`, `attachment; filename="contacts.csv"`), an audit log entry is written with the right entity/count, an unknown entity name is rejected with 400, unauthenticated rejected with 401). `npm run build` — clean.
+- A real Playwright pass: clicked the Export CSV button on the (populated) demo tenant's Contacts page, captured the actual browser download, and confirmed the downloaded file has the right filename and the correct row count (13 contacts + 1 header line).
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 31: CSV export [verified]` and pushed to `origin/main`.
+- **Next:** Phase 32 — per-contact hard delete (GDPR-style).
+
 ---
 
 ## STUCK

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { MineToggle } from "@/components/mine-toggle";
+import { ExportCsvLink } from "@/components/export-csv-link";
 
 export default async function LeadsPage({
   searchParams,
@@ -32,7 +33,10 @@ export default async function LeadsPage({
             Contacts working their way toward becoming an opportunity.
           </p>
         </div>
-        <MineToggle />
+        <div className="flex items-center gap-2">
+          <MineToggle />
+          <ExportCsvLink entity="leads" />
+        </div>
       </div>
 
       {leads.length === 0 ? (

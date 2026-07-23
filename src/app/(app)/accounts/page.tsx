@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { NewAccountForm } from "./new-account-form";
 import { MineToggle } from "@/components/mine-toggle";
+import { ExportCsvLink } from "@/components/export-csv-link";
 
 export default async function AccountsPage({
   searchParams,
@@ -39,7 +40,10 @@ export default async function AccountsPage({
             them.
           </p>
         </div>
-        <MineToggle />
+        <div className="flex items-center gap-2">
+          <MineToggle />
+          <ExportCsvLink entity="accounts" />
+        </div>
       </div>
 
       <NewAccountForm customFieldDefinitions={customFieldDefinitions} />

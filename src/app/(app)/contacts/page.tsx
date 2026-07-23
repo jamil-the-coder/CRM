@@ -8,6 +8,7 @@ import { TagFilter } from "./tag-filter";
 import { ContactTags } from "./contact-tags";
 import { getTagsForEntities, getEntityIdsForTag } from "@/lib/tags";
 import { MineToggle } from "@/components/mine-toggle";
+import { ExportCsvLink } from "@/components/export-csv-link";
 
 export default async function ContactsPage({
   searchParams,
@@ -69,6 +70,7 @@ export default async function ContactsPage({
         <div className="flex items-center gap-2">
           <MineToggle />
           <TagFilter tags={allTags} />
+          <ExportCsvLink entity="contacts" />
         </div>
       </div>
 

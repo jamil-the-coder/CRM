@@ -4,6 +4,7 @@ import { ensurePipelineStages } from "@/lib/pipeline-stages";
 import { Card, CardContent } from "@/components/ui/card";
 import { KanbanBoard } from "./kanban-board";
 import { MineToggle } from "@/components/mine-toggle";
+import { ExportCsvLink } from "@/components/export-csv-link";
 
 export default async function OpportunitiesPage({
   searchParams,
@@ -34,7 +35,10 @@ export default async function OpportunitiesPage({
             Drag a card to move it through your pipeline.
           </p>
         </div>
-        <MineToggle />
+        <div className="flex items-center gap-2">
+          <MineToggle />
+          <ExportCsvLink entity="opportunities" />
+        </div>
       </div>
 
       {opportunities.length === 0 ? (
