@@ -6,6 +6,12 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
 type Stage = { key: string; label: string; isWon: boolean; isLost: boolean };
+
+function stageAccentClass(stage: Stage) {
+  if (stage.isWon) return "bg-emerald-500";
+  if (stage.isLost) return "bg-destructive";
+  return "bg-primary/40";
+}
 type Opportunity = {
   id: string;
   name: string;
@@ -82,9 +88,7 @@ export function KanbanBoard({
 
   return (
     <div className="flex flex-1 flex-col gap-3">
-      {error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="text-destructive text-sm">{error}</p>}
       <div className="flex flex-1 gap-4 overflow-x-auto pb-4">
         {stages.map((stage) => {
           const cards = opportunities.filter((o) => o.stage === stage.key);
@@ -92,35 +96,36 @@ export function KanbanBoard({
             <div
               key={stage.key}
               data-stage-key={stage.key}
-              className={`flex w-64 shrink-0 flex-col gap-2 rounded-lg border p-2 transition-colors ${
+              className={`flex w-64 shrink-0 flex-col gap-2 overflow-hidden rounded-lg border pb-2 transition-colors ${
                 dragOverKey === stage.key
-                  ? "border-zinc-400 bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-900"
-                  : "border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950"
+                  ? "border-primary/40 bg-accent"
+                  : "border-border bg-muted/40"
               }`}
             >
-              <div className="flex items-center justify-between px-1">
-                <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              <div className={`h-1 shrink-0 ${stageAccentClass(stage)}`} />
+              <div className="flex items-center justify-between px-3">
+                <p className="text-foreground/80 text-sm font-semibold">
                   {stage.label}
                 </p>
                 <Badge variant="secondary">{cards.length}</Badge>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 px-2">
                 {cards.map((card) => (
                   <div
                     key={card.id}
                     onMouseDown={() => handleCardMouseDown(card.id)}
-                    className={`cursor-grab rounded-md border border-zinc-200 bg-white p-3 shadow-sm select-none active:cursor-grabbing dark:border-zinc-800 dark:bg-zinc-900 ${
+                    className={`bg-card border-border cursor-grab rounded-md border p-3 shadow-sm transition-shadow select-none hover:shadow-md active:cursor-grabbing ${
                       draggingId === card.id ? "opacity-50" : ""
                     }`}
                   >
                     <Link
                       href={`/opportunities/${card.id}`}
                       onMouseDown={(e) => e.stopPropagation()}
-                      className="text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-50"
+                      className="text-foreground hover:text-primary text-sm font-medium transition-colors"
                     >
                       {card.name}
                     </Link>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-muted-foreground text-xs tabular-nums">
                       {card.contactName} ·{" "}
                       {currencyFormatter.format(Number(card.value))}
                     </p>

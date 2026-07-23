@@ -6,80 +6,74 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  CustomFieldsInputs,
-  type CustomFieldDefinition,
-} from "@/components/custom-fields-inputs";
+import { ContactPicker } from "@/components/contact-picker";
 
-export function NewAccountForm({
-  customFieldDefinitions,
+export function NewLeadForm({
+  contacts,
 }: {
-  customFieldDefinitions: CustomFieldDefinition[];
+  contacts: { id: string; name: string }[];
 }) {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [customFields, setCustomFields] = useState<Record<string, string>>({});
+  const [contactId, setContactId] = useState("");
+  const [source, setSource] = useState("manual");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (!contactId) {
+      setError("Pick a contact for this lead.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
 
-    const response = await fetch("/api/accounts", {
+    const response = await fetch("/api/leads", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        name,
-        customFields:
-          Object.keys(customFields).length > 0 ? customFields : undefined,
-      }),
+      body: JSON.stringify({ contactId, source: source || undefined }),
     });
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
-      setError(body.error ?? "Couldn't create that account.");
+      setError(body.error ?? "Couldn't create that lead.");
       setSubmitting(false);
       return;
     }
 
-    setName("");
-    setCustomFields({});
+    setContactId("");
+    setSource("manual");
     setSubmitting(false);
     router.refresh();
   }
 
   return (
-    <Card>
+    <Card className="overflow-visible">
       <CardContent className="pt-6">
         <form
           onSubmit={handleSubmit}
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
         >
           <div className="flex flex-1 flex-col gap-2">
-            <Label htmlFor="name">Company name</Label>
-            <Input
-              id="name"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+            <ContactPicker
+              contacts={contacts}
+              value={contactId}
+              onChange={setContactId}
             />
           </div>
-          <CustomFieldsInputs
-            definitions={customFieldDefinitions}
-            values={customFields}
-            onChange={(key, value) =>
-              setCustomFields((prev) => ({ ...prev, [key]: value }))
-            }
-          />
+          <div className="flex flex-1 flex-col gap-2">
+            <Label htmlFor="source">Source</Label>
+            <Input
+              id="source"
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+            />
+          </div>
           <Button type="submit" disabled={submitting}>
-            {submitting ? "Adding…" : "Add account"}
+            {submitting ? "Adding…" : "Add lead"}
           </Button>
         </form>
-        {error && (
-          <p className="mt-2 text-sm text-destructive">{error}</p>
-        )}
+        {error && <p className="text-destructive mt-2 text-sm">{error}</p>}
       </CardContent>
     </Card>
   );

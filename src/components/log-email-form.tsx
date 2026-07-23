@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const selectClassName =
-  "h-9 rounded-md border border-zinc-200 bg-transparent px-3 text-sm shadow-xs dark:border-zinc-800 dark:bg-zinc-900";
+  "h-9 rounded-md border border-border bg-transparent px-3 text-sm shadow-xs dark:bg-input/30";
 
 export function LogEmailForm({ contactId }: { contactId: string }) {
   const router = useRouter();
@@ -45,7 +45,7 @@ export function LogEmailForm({ contactId }: { contactId: string }) {
   return (
     <Card>
       <CardContent className="flex flex-col gap-3 pt-6">
-        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <p className="text-sm font-medium text-foreground">
           Log an email
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
@@ -78,7 +78,7 @@ export function LogEmailForm({ contactId }: { contactId: string }) {
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={3}
-            className="w-full rounded-md border border-zinc-200 bg-transparent px-3 py-2 text-sm shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
+            className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm shadow-xs dark:bg-input/30"
           />
           <div className="flex justify-end">
             <Button type="submit" disabled={submitting}>
@@ -87,7 +87,7 @@ export function LogEmailForm({ contactId }: { contactId: string }) {
           </div>
         </form>
         {error && (
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-sm text-destructive">{error}</p>
         )}
       </CardContent>
     </Card>

@@ -21,10 +21,10 @@ export default async function CustomFieldsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Custom Fields
         </h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted-foreground">
           Add extra fields to Contacts, Accounts, and Opportunities to match
           how your business works — no code change needed.
         </p>
@@ -34,26 +34,26 @@ export default async function CustomFieldsPage() {
 
       {fields.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center text-sm text-zinc-500">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
             No custom fields yet. Add one above to get started.
           </CardContent>
         </Card>
       ) : (
         <Card>
-          <CardContent className="divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
+          <CardContent className="divide-y divide-border p-0 dark:divide-border">
             {fields.map((field) => (
               <div
                 key={field.id}
                 className="flex items-center justify-between px-4 py-3"
               >
                 <div>
-                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                  <p className="text-sm font-medium text-foreground">
                     {field.label}{" "}
-                    <span className="font-normal text-zinc-500">
+                    <span className="font-normal text-muted-foreground">
                       ({field.key})
                     </span>
                   </p>
-                  <p className="text-xs text-zinc-500">{field.type}</p>
+                  <p className="text-xs text-muted-foreground">{field.type}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary">

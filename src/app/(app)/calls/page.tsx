@@ -58,10 +58,10 @@ export default async function CallsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             Calls
           </h1>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted-foreground">
             Book a call against a lead using the {calendarProviderName}{" "}
             calendar provider.
             {connection && ` Connected as ${connection.accountEmail}.`}
@@ -76,14 +76,14 @@ export default async function CallsPage() {
 
       {needsOutlookConnection ? (
         <Card>
-          <CardContent className="py-8 text-center text-sm text-zinc-500">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
             Connect your Outlook calendar above to see available slots and
             book real calls.
           </CardContent>
         </Card>
       ) : slotsError ? (
         <Card>
-          <CardContent className="py-8 text-center text-sm text-red-600 dark:text-red-400">
+          <CardContent className="py-8 text-center text-sm text-destructive">
             {slotsError}
           </CardContent>
         </Card>
@@ -99,23 +99,23 @@ export default async function CallsPage() {
 
       {bookings.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center text-sm text-zinc-500">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
             No calls booked yet.
           </CardContent>
         </Card>
       ) : (
         <Card>
-          <CardContent className="divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
+          <CardContent className="divide-y divide-border p-0 dark:divide-border">
             {bookings.map((booking) => (
               <div
                 key={booking.id}
                 className="flex items-center justify-between px-4 py-3"
               >
                 <div>
-                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                  <p className="text-sm font-medium text-foreground">
                     {booking.startsAt.toLocaleString()}
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-muted-foreground">
                     {booking.lead ? `${booking.lead.contact.firstName} · ` : ""}
                     {booking.attendeeEmail}
                   </p>

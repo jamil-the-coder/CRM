@@ -18,10 +18,10 @@ export default async function TasksPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           My Tasks
         </h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted-foreground">
           To-dos assigned to you, standalone or linked to a record.
         </p>
       </div>
@@ -30,13 +30,13 @@ export default async function TasksPage() {
 
       {open.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center text-sm text-zinc-500">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
             No open tasks. Add one above to get started.
           </CardContent>
         </Card>
       ) : (
         <Card>
-          <CardContent className="divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
+          <CardContent className="divide-y divide-border p-0 dark:divide-border">
             {open.map((task) => (
               <TaskItem
                 key={task.id}
@@ -52,11 +52,11 @@ export default async function TasksPage() {
 
       {done.length > 0 && (
         <div>
-          <h2 className="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <h2 className="mb-2 text-sm font-medium text-foreground">
             Done
           </h2>
           <Card>
-            <CardContent className="divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
+            <CardContent className="divide-y divide-border p-0 dark:divide-border">
               {done.map((task) => (
                 <TaskItem
                   key={task.id}

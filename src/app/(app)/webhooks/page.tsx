@@ -27,10 +27,10 @@ export default async function WebhooksPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Webhooks
         </h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted-foreground">
           Send CRM events to n8n (or anywhere else) as signed HTTP POST
           requests. See <code className="text-xs">EVENTS.md</code> for the
           payload format.
@@ -41,7 +41,7 @@ export default async function WebhooksPage() {
 
       {endpoints.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center text-sm text-zinc-500">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
             No webhook endpoints configured yet.
           </CardContent>
         </Card>
@@ -51,16 +51,16 @@ export default async function WebhooksPage() {
             <Card key={endpoint.id}>
               <CardContent className="flex flex-col gap-3 pt-6">
                 <div className="flex items-center justify-between">
-                  <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                  <p className="truncate text-sm font-medium text-foreground">
                     {endpoint.url}
                   </p>
-                  <p className="shrink-0 text-xs text-zinc-500">
+                  <p className="shrink-0 text-xs text-muted-foreground">
                     {endpoint._count.deliveries} deliveries
                   </p>
                 </div>
                 {endpoint.deliveries.length > 0 && (
                   <div className="flex flex-col gap-1">
-                    <p className="text-xs font-medium text-zinc-500">
+                    <p className="text-xs font-medium text-muted-foreground">
                       Recent deliveries
                     </p>
                     {endpoint.deliveries.map((delivery) => (
@@ -68,7 +68,7 @@ export default async function WebhooksPage() {
                         key={delivery.id}
                         className="flex items-center justify-between text-xs"
                       >
-                        <span className="text-zinc-600 dark:text-zinc-400">
+                        <span className="text-muted-foreground">
                           {delivery.eventType} · attempt {delivery.attempts}
                           {delivery.lastError ? ` · ${delivery.lastError}` : ""}
                         </span>

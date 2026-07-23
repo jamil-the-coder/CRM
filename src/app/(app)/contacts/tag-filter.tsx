@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 
 const selectClassName =
-  "h-9 rounded-md border border-zinc-200 bg-transparent px-3 text-sm shadow-xs dark:border-zinc-800 dark:bg-zinc-900";
+  "h-9 rounded-md border border-border bg-transparent px-3 text-sm shadow-xs dark:bg-input/30";
 
 export function TagFilter({
   tags,

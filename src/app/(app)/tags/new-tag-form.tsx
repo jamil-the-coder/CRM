@@ -77,10 +77,10 @@ export function NewTagForm() {
           </Button>
         </form>
         {error && (
-          <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
+          <p className="mt-2 text-sm text-destructive">{error}</p>
         )}
         {name && (
-          <p className="mt-3 text-xs text-zinc-500">
+          <p className="mt-3 text-xs text-muted-foreground">
             Preview: <Badge className={tagColorClassName(color)}>{name}</Badge>
           </p>
         )}

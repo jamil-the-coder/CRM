@@ -60,10 +60,10 @@ export default async function ContactsPage({
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-foreground text-2xl font-semibold tracking-tight">
             Contacts
           </h1>
-          <p className="text-sm text-zinc-500">
+          <p className="text-muted-foreground text-sm">
             People and companies you&apos;re in touch with.
           </p>
         </div>
@@ -82,7 +82,7 @@ export default async function ContactsPage({
 
       {contacts.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center text-sm text-zinc-500">
+          <CardContent className="text-muted-foreground py-8 text-center text-sm">
             {tagId
               ? "No contacts with that tag."
               : "No contacts yet. Add one above to get started."}
@@ -90,17 +90,17 @@ export default async function ContactsPage({
         </Card>
       ) : (
         <Card className="overflow-visible">
-          <CardContent className="divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
+          <CardContent className="divide-border divide-y p-0">
             {contacts.map((contact) => (
               <div
                 key={contact.id}
-                className="flex items-center justify-between gap-4 px-4 py-3"
+                className="hover:bg-muted/40 flex items-center justify-between gap-4 px-4 py-3 transition-colors"
               >
                 <Link href={`/contacts/${contact.id}`} className="group">
-                  <p className="text-sm font-medium text-zinc-900 group-hover:underline dark:text-zinc-50">
+                  <p className="text-foreground group-hover:text-primary text-sm font-medium transition-colors">
                     {contact.firstName} {contact.lastName ?? ""}
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-muted-foreground text-xs">
                     {[contact.email, contact.company]
                       .filter(Boolean)
                       .join(" · ") || "No details yet"}

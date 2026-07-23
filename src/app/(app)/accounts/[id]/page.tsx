@@ -55,10 +55,10 @@ export default async function AccountDetailPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           {account.name}
         </h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted-foreground">
           {account.contacts.length} contact
           {account.contacts.length === 1 ? "" : "s"} ·{" "}
           {account.opportunities.length} opportunit
@@ -73,8 +73,8 @@ export default async function AccountDetailPage({
               <div className="flex flex-wrap gap-4 text-sm">
                 {Object.entries(customFields).map(([key, value]) => (
                   <div key={key}>
-                    <p className="text-xs text-zinc-500">{key}</p>
-                    <p className="font-medium text-zinc-900 dark:text-zinc-50">
+                    <p className="text-xs text-muted-foreground">{key}</p>
+                    <p className="font-medium text-foreground">
                       {value}
                     </p>
                   </div>
@@ -95,28 +95,28 @@ export default async function AccountDetailPage({
       )}
 
       <div>
-        <h2 className="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <h2 className="mb-2 text-sm font-medium text-foreground">
           Contacts
         </h2>
         {account.contacts.length === 0 ? (
           <Card>
-            <CardContent className="py-6 text-center text-sm text-zinc-500">
+            <CardContent className="py-6 text-center text-sm text-muted-foreground">
               No contacts linked to this account yet.
             </CardContent>
           </Card>
         ) : (
           <Card>
-            <CardContent className="divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
+            <CardContent className="divide-y divide-border p-0 dark:divide-border">
               {account.contacts.map((contact) => (
                 <Link
                   key={contact.id}
                   href={`/contacts/${contact.id}`}
-                  className="block px-4 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                  className="block px-4 py-3 transition-colors hover:bg-muted/40"
                 >
-                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                  <p className="text-sm font-medium text-foreground">
                     {contact.firstName} {contact.lastName ?? ""}
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-muted-foreground">
                     {[contact.email, contact.phone].filter(Boolean).join(" · ") ||
                       "No details yet"}
                   </p>
@@ -128,29 +128,29 @@ export default async function AccountDetailPage({
       </div>
 
       <div>
-        <h2 className="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <h2 className="mb-2 text-sm font-medium text-foreground">
           Opportunities
         </h2>
         {account.opportunities.length === 0 ? (
           <Card>
-            <CardContent className="py-6 text-center text-sm text-zinc-500">
+            <CardContent className="py-6 text-center text-sm text-muted-foreground">
               No opportunities linked to this account yet.
             </CardContent>
           </Card>
         ) : (
           <Card>
-            <CardContent className="divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
+            <CardContent className="divide-y divide-border p-0 dark:divide-border">
               {account.opportunities.map((opportunity) => (
                 <Link
                   key={opportunity.id}
                   href={`/opportunities/${opportunity.id}`}
-                  className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                  className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-muted/40"
                 >
                   <div>
-                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                    <p className="text-sm font-medium text-foreground">
                       {opportunity.name}
                     </p>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-muted-foreground">
                       {currencyFormatter.format(Number(opportunity.value))}
                     </p>
                   </div>

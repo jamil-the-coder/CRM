@@ -20,10 +20,10 @@ export default async function ApiKeysPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           API keys
         </h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted-foreground">
           Used by n8n (or any other tool) to read and write CRM data. See{" "}
           <code className="text-xs">API.md</code> for the full endpoint
           reference.
@@ -34,23 +34,23 @@ export default async function ApiKeysPage() {
 
       {apiKeys.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center text-sm text-zinc-500">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
             No API keys yet.
           </CardContent>
         </Card>
       ) : (
         <Card>
-          <CardContent className="divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
+          <CardContent className="divide-y divide-border p-0 dark:divide-border">
             {apiKeys.map((key) => (
               <div
                 key={key.id}
                 className="flex items-center justify-between px-4 py-3"
               >
                 <div>
-                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                  <p className="text-sm font-medium text-foreground">
                     {key.name}
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-muted-foreground">
                     {key.keyPrefix}… ·{" "}
                     {key.lastUsedAt
                       ? `last used ${key.lastUsedAt.toLocaleDateString()}`

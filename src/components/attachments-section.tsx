@@ -68,7 +68,7 @@ export function AttachmentsSection({
   return (
     <Card>
       <CardContent className="flex flex-col gap-3 pt-6">
-        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <p className="text-sm font-medium text-foreground">
           Attachments
         </p>
         <div className="flex items-center gap-2">
@@ -77,17 +77,17 @@ export function AttachmentsSection({
             type="file"
             onChange={handleUpload}
             disabled={uploading}
-            className="text-sm text-zinc-500 file:mr-3 file:rounded-md file:border-0 file:bg-zinc-900 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white dark:file:bg-zinc-100 dark:file:text-zinc-900"
+            className="text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground"
           />
-          {uploading && <span className="text-xs text-zinc-500">Uploading…</span>}
+          {uploading && <span className="text-xs text-muted-foreground">Uploading…</span>}
         </div>
         {error && (
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-sm text-destructive">{error}</p>
         )}
         {attachments.length === 0 ? (
-          <p className="text-sm text-zinc-500">No files attached yet.</p>
+          <p className="text-sm text-muted-foreground">No files attached yet.</p>
         ) : (
-          <div className="flex flex-col divide-y divide-zinc-200 dark:divide-zinc-800">
+          <div className="flex flex-col divide-y divide-border">
             {attachments.map((file) => (
               <div
                 key={file.id}
@@ -95,12 +95,12 @@ export function AttachmentsSection({
               >
                 <a
                   href={`/api/attachments/${file.id}/download`}
-                  className="text-sm text-zinc-900 hover:underline dark:text-zinc-50"
+                  className="text-sm text-foreground hover:text-primary transition-colors"
                 >
                   {file.fileName}
                 </a>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-zinc-500">
+                  <span className="text-xs text-muted-foreground">
                     {formatSize(file.sizeBytes)}
                   </span>
                   <Button

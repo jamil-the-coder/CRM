@@ -33,10 +33,10 @@ export function LeadSourceChart({
               className="size-2.5 shrink-0 rounded-full"
               style={{ backgroundColor: color }}
             />
-            <span className="w-28 shrink-0 truncate text-xs text-zinc-500">
+            <span className="text-muted-foreground w-28 shrink-0 truncate text-xs">
               {row.source}
             </span>
-            <div className="h-3 flex-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-900">
+            <div className="bg-muted h-3 flex-1 overflow-hidden rounded-full">
               <div
                 className="h-3 rounded-full"
                 style={{
@@ -45,7 +45,7 @@ export function LeadSourceChart({
                 }}
               />
             </div>
-            <span className="w-10 shrink-0 text-right text-xs text-zinc-700 dark:text-zinc-300">
+            <span className="text-foreground w-10 shrink-0 text-right text-xs tabular-nums">
               {row.count}
             </span>
           </div>

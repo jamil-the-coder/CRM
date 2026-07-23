@@ -7,8 +7,18 @@ export default async function SignupPage() {
   if (user) redirect("/dashboard");
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-zinc-50 px-4 py-12 dark:bg-zinc-950">
-      <SignupForm />
+    <div className="from-primary/10 via-background to-background flex flex-1 items-center justify-center bg-gradient-to-b px-4 py-12">
+      <div className="flex w-full max-w-sm flex-col items-center gap-6">
+        <div className="flex items-center gap-2.5">
+          <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-xl text-lg font-semibold">
+            C
+          </span>
+          <span className="text-foreground text-lg font-semibold tracking-tight">
+            CRM
+          </span>
+        </div>
+        <SignupForm />
+      </div>
     </div>
   );
 }

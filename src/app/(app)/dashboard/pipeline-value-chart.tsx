@@ -19,16 +19,16 @@ export function PipelineValueChart({
           className="flex items-center gap-3"
           title={`${row.label}: ${currencyFormatter.format(row.value)} across ${row.count} deal(s)`}
         >
-          <span className="w-24 shrink-0 truncate text-xs text-zinc-500">
+          <span className="text-muted-foreground w-24 shrink-0 truncate text-xs">
             {row.label}
           </span>
-          <div className="h-3 flex-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-900">
+          <div className="bg-muted h-3 flex-1 overflow-hidden rounded-full">
             <div
-              className="h-3 rounded-full bg-[#2a78d6] dark:bg-[#3987e5]"
+              className="bg-primary h-3 rounded-full"
               style={{ width: `${(row.value / max) * 100}%` }}
             />
           </div>
-          <span className="w-24 shrink-0 text-right text-xs text-zinc-700 dark:text-zinc-300">
+          <span className="text-foreground w-24 shrink-0 text-right text-xs tabular-nums">
             {currencyFormatter.format(row.value)}
           </span>
         </div>

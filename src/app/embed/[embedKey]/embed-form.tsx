@@ -50,7 +50,7 @@ export function EmbedForm({
 
   if (status === "success") {
     return (
-      <p className="text-sm text-zinc-700">
+      <p className="text-sm text-muted-foreground">
         Thanks — we&apos;ll be in touch shortly.
       </p>
     );
@@ -98,7 +98,7 @@ export function EmbedForm({
         />
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" disabled={submitting}>
         {submitting ? "Sending…" : "Submit"}
       </Button>

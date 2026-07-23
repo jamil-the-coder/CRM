@@ -19,7 +19,7 @@ export default async function EmbedFormPage({
   return (
     <div className="flex min-h-screen items-center justify-center bg-white p-4">
       <div className="w-full max-w-sm">
-        <h1 className="mb-4 text-lg font-semibold text-zinc-900">
+        <h1 className="mb-4 text-lg font-semibold text-foreground">
           {form.name}
         </h1>
         <EmbedForm embedKey={embedKey} fields={form.fields as FormField[]} />

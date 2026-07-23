@@ -59,7 +59,7 @@ export function NewWebhookEndpointForm() {
           </Button>
         </form>
         {error && (
-          <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
+          <p className="mt-2 text-sm text-destructive">{error}</p>
         )}
       </CardContent>
     </Card>

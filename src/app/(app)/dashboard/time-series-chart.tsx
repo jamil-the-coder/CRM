@@ -10,7 +10,7 @@ export function TimeSeriesChart({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-4 text-xs text-zinc-500">
+      <div className="text-muted-foreground flex items-center gap-4 text-xs">
         <span className="flex items-center gap-1.5">
           <span
             className="size-2.5 rounded-full"
@@ -50,7 +50,7 @@ export function TimeSeriesChart({
           </div>
         ))}
       </div>
-      <div className="flex justify-between text-[10px] text-zinc-400">
+      <div className="text-muted-foreground flex justify-between text-[10px]">
         <span>{data[0]?.date}</span>
         <span>{data[data.length - 1]?.date}</span>
       </div>

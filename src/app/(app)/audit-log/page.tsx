@@ -14,12 +14,12 @@ export default async function AuditLogPage() {
     return (
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             Audit Log
           </h1>
         </div>
         <Card>
-          <CardContent className="py-8 text-center text-sm text-zinc-500">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
             Only admins can view the audit log.
           </CardContent>
         </Card>
@@ -47,10 +47,10 @@ export default async function AuditLogPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Audit Log
         </h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted-foreground">
           Security-sensitive actions — sign-ins, API key and webhook changes,
           team and data-export events. Separate from each record&apos;s own
           activity timeline.
@@ -59,23 +59,23 @@ export default async function AuditLogPage() {
 
       {entries.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center text-sm text-zinc-500">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
             Nothing logged yet.
           </CardContent>
         </Card>
       ) : (
         <Card>
-          <CardContent className="divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
+          <CardContent className="divide-y divide-border p-0 dark:divide-border">
             {entries.map((entry) => (
               <div
                 key={entry.id}
                 className="flex items-center justify-between gap-4 px-4 py-3"
               >
                 <div>
-                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                  <p className="text-sm font-medium text-foreground">
                     {formatAction(entry.action)}
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-muted-foreground">
                     {entry.actorUserId
                       ? (actorEmailById.get(entry.actorUserId) ?? "Unknown user")
                       : "System"}

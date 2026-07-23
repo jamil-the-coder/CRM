@@ -13,7 +13,7 @@ import {
 } from "@/components/custom-fields-inputs";
 
 const selectClassName =
-  "h-9 rounded-md border border-zinc-200 bg-transparent px-3 text-sm shadow-xs dark:border-zinc-800 dark:bg-zinc-900";
+  "h-9 rounded-md border border-border bg-transparent px-3 text-sm shadow-xs dark:bg-input/30";
 
 export function NewContactForm({
   accounts,
@@ -138,7 +138,7 @@ export function NewContactForm({
           </Button>
         </form>
         {error && (
-          <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
+          <p className="mt-2 text-sm text-destructive">{error}</p>
         )}
       </CardContent>
     </Card>

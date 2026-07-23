@@ -21,10 +21,10 @@ export default async function FormsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Forms
         </h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted-foreground">
           Embed a form on your website to capture leads straight into this CRM.
         </p>
       </div>
@@ -33,7 +33,7 @@ export default async function FormsPage() {
 
       {forms.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center text-sm text-zinc-500">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
             No forms yet. Create one above to get an embeddable snippet.
           </CardContent>
         </Card>
@@ -43,10 +43,10 @@ export default async function FormsPage() {
             <Card key={form.id}>
               <CardContent className="flex flex-col gap-3 pt-6">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                  <p className="text-sm font-medium text-foreground">
                     {form.name}
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-muted-foreground">
                     {form._count.submissions} submissions
                   </p>
                 </div>

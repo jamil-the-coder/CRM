@@ -16,18 +16,18 @@ export function ConversionFunnelChart({
           className="flex items-center gap-3"
           title={`${row.label}: ${row.reached} opportunit${row.reached === 1 ? "y" : "ies"} reached this stage (${row.conversionRate}% of the first stage)`}
         >
-          <span className="w-24 shrink-0 truncate text-xs text-zinc-500">
+          <span className="text-muted-foreground w-24 shrink-0 truncate text-xs">
             {row.label}
           </span>
-          <div className="h-3 flex-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-900">
+          <div className="bg-muted h-3 flex-1 overflow-hidden rounded-full">
             <div
-              className="h-3 rounded-full bg-[#86b6ef] dark:bg-[#184f95]"
+              className="bg-primary/45 h-3 rounded-full"
               style={{
                 width: `${Math.max(row.conversionRate, row.reached > 0 ? 2 : 0)}%`,
               }}
             />
           </div>
-          <span className="w-16 shrink-0 text-right text-xs text-zinc-700 dark:text-zinc-300">
+          <span className="text-foreground w-16 shrink-0 text-right text-xs tabular-nums">
             {row.conversionRate}%
           </span>
         </div>

@@ -18,7 +18,7 @@ export function RecordTimeline({ entries }: { entries: TimelineEntry[] }) {
   if (entries.length === 0) {
     return (
       <Card>
-        <CardContent className="py-6 text-center text-sm text-zinc-500">
+        <CardContent className="py-6 text-center text-sm text-muted-foreground">
           Nothing here yet — activity and notes will show up as they happen.
         </CardContent>
       </Card>
@@ -27,28 +27,28 @@ export function RecordTimeline({ entries }: { entries: TimelineEntry[] }) {
 
   return (
     <Card>
-      <CardContent className="divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
+      <CardContent className="divide-y divide-border p-0 dark:divide-border">
         {entries.map((entry) => (
           <div key={`${entry.kind}-${entry.id}`} className="px-4 py-3">
             <div className="flex items-baseline justify-between gap-2">
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+              <p className="text-sm font-medium text-foreground">
                 {entry.kind === "note"
                   ? `Note${entry.authorEmail ? ` from ${entry.authorEmail}` : ""}`
                   : entry.kind === "email"
                     ? `Email ${entry.direction === "inbound" ? "received" : "sent"} — ${entry.subject}`
                     : formatActivityType(entry.type)}
               </p>
-              <p className="shrink-0 text-xs text-zinc-500">
+              <p className="shrink-0 text-xs text-muted-foreground">
                 {entry.createdAt.toLocaleString()}
               </p>
             </div>
             {entry.kind === "note" || entry.kind === "email" ? (
-              <p className="mt-1 text-sm whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">
+              <p className="mt-1 text-sm whitespace-pre-wrap text-foreground">
                 {entry.body}
               </p>
             ) : (
               formatPayload(entry.payload) && (
-                <p className="mt-1 text-sm text-zinc-500">
+                <p className="mt-1 text-sm text-muted-foreground">
                   {formatPayload(entry.payload)}
                 </p>
               )

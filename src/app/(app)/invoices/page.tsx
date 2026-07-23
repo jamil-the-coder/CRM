@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { invoiceStatusBadgeVariant } from "@/lib/status-badge";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -19,10 +20,10 @@ export default async function InvoicesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-foreground text-2xl font-semibold tracking-tight">
           Invoices
         </h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-muted-foreground text-sm">
           Created automatically by the Finance Agent when a deal closes won. A
           placeholder for a real accounting integration (Xero/QuickBooks) — not
           a payment processor.
@@ -31,30 +32,32 @@ export default async function InvoicesPage() {
 
       {invoices.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center text-sm text-zinc-500">
+          <CardContent className="text-muted-foreground py-8 text-center text-sm">
             No invoices yet. They appear here once an opportunity is marked
             closed won and the Finance Agent n8n flow runs.
           </CardContent>
         </Card>
       ) : (
         <Card>
-          <CardContent className="divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
+          <CardContent className="divide-border divide-y p-0">
             {invoices.map((invoice) => (
               <div
                 key={invoice.id}
-                className="flex items-center justify-between px-4 py-3"
+                className="hover:bg-muted/40 flex items-center justify-between px-4 py-3 transition-colors"
               >
                 <div>
-                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                  <p className="text-foreground text-sm font-medium">
                     {invoice.opportunity.name} ·{" "}
                     {invoice.opportunity.contact.firstName}{" "}
                     {invoice.opportunity.contact.lastName ?? ""}
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-muted-foreground text-xs tabular-nums">
                     {currencyFormatter.format(Number(invoice.amount))}
                   </p>
                 </div>
-                <Badge variant="secondary">{invoice.status}</Badge>
+                <Badge variant={invoiceStatusBadgeVariant(invoice.status)}>
+                  {invoice.status}
+                </Badge>
               </div>
             ))}
           </CardContent>

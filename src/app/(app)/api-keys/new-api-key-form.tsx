@@ -43,10 +43,10 @@ export function NewApiKeyForm() {
     return (
       <Card>
         <CardContent className="flex flex-col gap-2 pt-6">
-          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+          <p className="text-sm font-medium text-foreground">
             Copy this key now — it won&apos;t be shown again.
           </p>
-          <pre className="overflow-x-auto rounded-md bg-zinc-100 p-2 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+          <pre className="overflow-x-auto rounded-md bg-muted p-2 text-xs text-foreground">
             {createdKey}
           </pre>
           <Button
@@ -84,7 +84,7 @@ export function NewApiKeyForm() {
           </Button>
         </form>
         {error && (
-          <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
+          <p className="mt-2 text-sm text-destructive">{error}</p>
         )}
       </CardContent>
     </Card>

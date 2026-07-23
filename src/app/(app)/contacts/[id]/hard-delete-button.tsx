@@ -38,7 +38,7 @@ export function HardDeleteButton({ contactId }: { contactId: string }) {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-zinc-500">
+      <span className="text-xs text-muted-foreground">
         Permanently delete this person and all their notes, files, and
         activity?
       </span>

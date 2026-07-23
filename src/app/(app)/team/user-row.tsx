@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 const selectClassName =
-  "h-8 rounded-md border border-zinc-200 bg-transparent px-2 text-sm shadow-xs dark:border-zinc-800 dark:bg-zinc-900";
+  "h-8 rounded-md border border-border bg-transparent px-2 text-sm shadow-xs dark:bg-input/30";
 
 export function UserRow({
   id,
@@ -42,9 +42,9 @@ export function UserRow({
   return (
     <div className="flex items-center justify-between px-4 py-3">
       <div>
-        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+        <p className="text-sm font-medium text-foreground">
           {email}
-          {isSelf && <span className="ml-2 text-xs text-zinc-500">(you)</span>}
+          {isSelf && <span className="ml-2 text-xs text-muted-foreground">(you)</span>}
         </p>
       </div>
       <div className="flex items-center gap-2">

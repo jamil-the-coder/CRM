@@ -12,7 +12,8 @@ import { AddNoteForm } from "@/components/add-note-form";
 import { AttachmentsSection } from "@/components/attachments-section";
 import { RecordTasksSection } from "@/components/record-tasks-section";
 import { tagColorClassName } from "@/lib/tag-colors";
-import { stageBadgeVariant } from "@/lib/status-badge";
+import { ensurePipelineStages } from "@/lib/pipeline-stages";
+import { StageSelect } from "./stage-select";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -34,28 +35,30 @@ export default async function OpportunityDetailPage({
   });
   if (!opportunity) notFound();
 
-  const [timeline, customFields, tagsByEntity, attachments, tasks] = await Promise.all([
-    getTimeline(tenantId, "opportunity", id),
-    getFieldValues(tenantId, "opportunity", id),
-    getTagsForEntities(tenantId, "opportunity", [id]),
-    db.attachment.findMany({
-      where: { tenantId, entityType: "opportunity", entityId: id },
-      orderBy: { createdAt: "desc" },
-    }),
-    db.task.findMany({
-      where: { tenantId, entityType: "opportunity", entityId: id },
-      orderBy: [{ status: "asc" }, { dueDate: "asc" }],
-    }),
-  ]);
+  const [timeline, customFields, tagsByEntity, attachments, tasks, stages] =
+    await Promise.all([
+      getTimeline(tenantId, "opportunity", id),
+      getFieldValues(tenantId, "opportunity", id),
+      getTagsForEntities(tenantId, "opportunity", [id]),
+      db.attachment.findMany({
+        where: { tenantId, entityType: "opportunity", entityId: id },
+        orderBy: { createdAt: "desc" },
+      }),
+      db.task.findMany({
+        where: { tenantId, entityType: "opportunity", entityId: id },
+        orderBy: [{ status: "asc" }, { dueDate: "asc" }],
+      }),
+      ensurePipelineStages(tenantId),
+    ]);
   const tags = tagsByEntity[id] ?? [];
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           {opportunity.name}
         </h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted-foreground">
           {currencyFormatter.format(Number(opportunity.value))}
         </p>
       </div>
@@ -64,26 +67,28 @@ export default async function OpportunityDetailPage({
         <CardContent className="flex flex-col gap-3 pt-6">
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <div>
-              <p className="text-xs text-zinc-500">Stage</p>
-              <Badge variant={stageBadgeVariant(opportunity.stage)}>
-                {opportunity.stage}
-              </Badge>
+              <p className="text-xs text-muted-foreground">Stage</p>
+              <StageSelect
+                opportunityId={id}
+                stage={opportunity.stage}
+                stages={stages.map((s) => ({ key: s.key, label: s.label }))}
+              />
             </div>
             <div>
-              <p className="text-xs text-zinc-500">Contact</p>
+              <p className="text-xs text-muted-foreground">Contact</p>
               <Link
                 href={`/contacts/${opportunity.contact.id}`}
-                className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
+                className="font-medium text-foreground hover:text-primary transition-colors"
               >
                 {opportunity.contact.firstName} {opportunity.contact.lastName ?? ""}
               </Link>
             </div>
             {opportunity.account && (
               <div>
-                <p className="text-xs text-zinc-500">Account</p>
+                <p className="text-xs text-muted-foreground">Account</p>
                 <Link
                   href={`/accounts/${opportunity.account.id}`}
-                  className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
+                  className="font-medium text-foreground hover:text-primary transition-colors"
                 >
                   {opportunity.account.name}
                 </Link>
@@ -91,8 +96,8 @@ export default async function OpportunityDetailPage({
             )}
             {Object.entries(customFields).map(([key, value]) => (
               <div key={key}>
-                <p className="text-xs text-zinc-500">{key}</p>
-                <p className="font-medium text-zinc-900 dark:text-zinc-50">
+                <p className="text-xs text-muted-foreground">{key}</p>
+                <p className="font-medium text-foreground">
                   {value}
                 </p>
               </div>

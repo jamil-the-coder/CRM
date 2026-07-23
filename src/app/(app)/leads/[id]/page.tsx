@@ -12,6 +12,7 @@ import { AttachmentsSection } from "@/components/attachments-section";
 import { RecordTasksSection } from "@/components/record-tasks-section";
 import { leadStatusBadgeVariant } from "@/lib/status-badge";
 import { tagColorClassName } from "@/lib/tag-colors";
+import { ConvertButton } from "./convert-button";
 
 export default async function LeadDetailPage({
   params,
@@ -28,49 +29,68 @@ export default async function LeadDetailPage({
   });
   if (!lead) notFound();
 
-  const [timeline, tagsByEntity, attachments, tasks] = await Promise.all([
-    getTimeline(tenantId, "lead", id),
-    getTagsForEntities(tenantId, "lead", [id]),
-    db.attachment.findMany({
-      where: { tenantId, entityType: "lead", entityId: id },
-      orderBy: { createdAt: "desc" },
-    }),
-    db.task.findMany({
-      where: { tenantId, entityType: "lead", entityId: id },
-      orderBy: [{ status: "asc" }, { dueDate: "asc" }],
-    }),
-  ]);
+  const [timeline, tagsByEntity, attachments, tasks, convertedOpportunity] =
+    await Promise.all([
+      getTimeline(tenantId, "lead", id),
+      getTagsForEntities(tenantId, "lead", [id]),
+      db.attachment.findMany({
+        where: { tenantId, entityType: "lead", entityId: id },
+        orderBy: { createdAt: "desc" },
+      }),
+      db.task.findMany({
+        where: { tenantId, entityType: "lead", entityId: id },
+        orderBy: [{ status: "asc" }, { dueDate: "asc" }],
+      }),
+      db.opportunity.findFirst({ where: { tenantId, leadId: id } }),
+    ]);
   const tags = tagsByEntity[id] ?? [];
+  const contactName = `${lead.contact.firstName} ${lead.contact.lastName ?? ""}`.trim();
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-          {lead.contact.firstName} {lead.contact.lastName ?? ""}
-        </h1>
-        <p className="text-sm text-zinc-500">Source: {lead.source}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            {lead.contact.firstName} {lead.contact.lastName ?? ""}
+          </h1>
+          <p className="text-sm text-muted-foreground">Source: {lead.source}</p>
+        </div>
+        {convertedOpportunity ? (
+          <Link
+            href={`/opportunities/${convertedOpportunity.id}`}
+            className="text-primary text-sm font-medium hover:underline"
+          >
+            View opportunity →
+          </Link>
+        ) : (
+          <ConvertButton
+            leadId={id}
+            contactId={lead.contactId}
+            defaultName={`${contactName} — Opportunity`}
+          />
+        )}
       </div>
 
       <Card>
         <CardContent className="flex flex-col gap-3 pt-6">
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <div>
-              <p className="text-xs text-zinc-500">Status</p>
+              <p className="text-xs text-muted-foreground">Status</p>
               <Badge variant={leadStatusBadgeVariant(lead.status)}>
                 {lead.status}
               </Badge>
             </div>
             <div>
-              <p className="text-xs text-zinc-500">Score</p>
-              <p className="font-medium text-zinc-900 dark:text-zinc-50">
+              <p className="text-xs text-muted-foreground">Score</p>
+              <p className="font-medium text-foreground">
                 {lead.score}
               </p>
             </div>
             <div>
-              <p className="text-xs text-zinc-500">Contact</p>
+              <p className="text-xs text-muted-foreground">Contact</p>
               <Link
                 href={`/contacts/${lead.contact.id}`}
-                className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
+                className="font-medium text-foreground hover:text-primary transition-colors"
               >
                 {lead.contact.firstName} {lead.contact.lastName ?? ""}
               </Link>

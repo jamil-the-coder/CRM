@@ -12,12 +12,12 @@ export default async function TeamPage() {
     return (
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             Team
           </h1>
         </div>
         <Card>
-          <CardContent className="py-8 text-center text-sm text-zinc-500">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
             Only admins can manage the team.
           </CardContent>
         </Card>
@@ -40,10 +40,10 @@ export default async function TeamPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Team
         </h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted-foreground">
           People with access to this workspace.
         </p>
       </div>
@@ -51,7 +51,7 @@ export default async function TeamPage() {
       <NewUserForm />
 
       <Card>
-        <CardContent className="divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
+        <CardContent className="divide-y divide-border p-0 dark:divide-border">
           {users.map((u) => (
             <UserRow
               key={u.id}

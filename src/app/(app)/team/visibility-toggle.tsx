@@ -29,10 +29,10 @@ export function VisibilityToggle({
     <Card>
       <CardContent className="flex items-center justify-between pt-6">
         <div>
-          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+          <p className="text-sm font-medium text-foreground">
             Restrict members to their own records
           </p>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-muted-foreground">
             When on, Member accounts only see Contacts, Accounts, Leads, and
             Opportunities they own. Admins always see everything.
           </p>
@@ -43,11 +43,11 @@ export function VisibilityToggle({
           disabled={busy}
           aria-pressed={restrictMemberVisibility}
           className={`h-6 w-11 shrink-0 rounded-full transition-colors ${
-            restrictMemberVisibility ? "bg-zinc-900 dark:bg-zinc-100" : "bg-zinc-200 dark:bg-zinc-800"
+            restrictMemberVisibility ? "bg-primary" : "bg-muted"
           }`}
         >
           <span
-            className={`block size-5 rounded-full bg-white shadow transition-transform dark:bg-zinc-950 ${
+            className={`block size-5 rounded-full bg-background shadow transition-transform ${
               restrictMemberVisibility ? "translate-x-5" : "translate-x-0.5"
             }`}
           />

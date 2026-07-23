@@ -80,13 +80,13 @@ export function GlobalSearch() {
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         onKeyDown={handleKeyDown}
         aria-label="Search"
-        className="h-9 w-full rounded-md border border-zinc-200 bg-transparent px-3 text-sm shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
+        className="h-9 w-full rounded-md border border-border bg-transparent px-3 text-sm shadow-xs dark:bg-input/30"
       />
       {open && displayedGroups.length > 0 && (
-        <div className="absolute top-full left-0 z-20 mt-1 w-full max-h-96 overflow-y-auto rounded-md border border-zinc-200 bg-white py-1 shadow-md dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="absolute top-full left-0 z-20 mt-1 w-full max-h-96 overflow-y-auto rounded-md border border-border bg-white py-1 shadow-md dark:bg-input/30">
           {displayedGroups.map((group) => (
             <div key={group.label}>
-              <p className="px-3 pt-2 pb-1 text-xs font-medium text-zinc-500">
+              <p className="px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground">
                 {group.label}
               </p>
               {group.items.map((item) => {
@@ -99,15 +99,15 @@ export function GlobalSearch() {
                     onClick={() => navigateTo(item.href)}
                     className={`block w-full px-3 py-1.5 text-left text-sm ${
                       index === activeIndex
-                        ? "bg-zinc-100 dark:bg-zinc-800"
-                        : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        ? "bg-accent"
+                        : "hover:bg-muted"
                     }`}
                   >
-                    <span className="text-zinc-900 dark:text-zinc-50">
+                    <span className="text-foreground">
                       {item.label}
                     </span>
                     {item.sublabel && (
-                      <span className="ml-2 text-xs text-zinc-500">
+                      <span className="ml-2 text-xs text-muted-foreground">
                         {item.sublabel}
                       </span>
                     )}
@@ -119,7 +119,7 @@ export function GlobalSearch() {
         </div>
       )}
       {open && query.trim().length >= 2 && displayedGroups.length === 0 && (
-        <div className="absolute top-full left-0 z-20 mt-1 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-500 shadow-md dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="absolute top-full left-0 z-20 mt-1 w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-muted-foreground shadow-md dark:bg-input/30">
           No matches.
         </div>
       )}

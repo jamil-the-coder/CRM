@@ -45,7 +45,7 @@ export function SignupForm() {
   }
 
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Create your account</CardTitle>
         <CardDescription>
@@ -86,20 +86,20 @@ export function SignupForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <p className="text-xs text-zinc-500">At least 10 characters.</p>
+            <p className="text-muted-foreground text-xs">
+              At least 10 characters.
+            </p>
           </div>
-          {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-          )}
+          {error && <p className="text-destructive text-sm">{error}</p>}
           <Button type="submit" disabled={submitting} className="mt-2">
             {submitting ? "Creating account…" : "Create account"}
           </Button>
         </form>
-        <p className="mt-4 text-center text-sm text-zinc-500">
+        <p className="text-muted-foreground mt-4 text-center text-sm">
           Already have an account?{" "}
           <Link
             href="/login"
-            className="font-medium text-zinc-900 underline dark:text-zinc-100"
+            className="text-primary font-medium hover:underline"
           >
             Log in
           </Link>

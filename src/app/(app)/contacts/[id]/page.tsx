@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getTimeline } from "@/lib/timeline";
@@ -13,6 +12,7 @@ import { LogEmailForm } from "@/components/log-email-form";
 import { AttachmentsSection } from "@/components/attachments-section";
 import { RecordTasksSection } from "@/components/record-tasks-section";
 import { HardDeleteButton } from "./hard-delete-button";
+import { AccountLinker } from "./account-linker";
 import { tagColorClassName } from "@/lib/tag-colors";
 
 export default async function ContactDetailPage({
@@ -30,29 +30,35 @@ export default async function ContactDetailPage({
   });
   if (!contact) notFound();
 
-  const [timeline, customFields, tagsByEntity, attachments, tasks] = await Promise.all([
-    getTimeline(tenantId, "contact", id),
-    getFieldValues(tenantId, "contact", id),
-    getTagsForEntities(tenantId, "contact", [id]),
-    db.attachment.findMany({
-      where: { tenantId, entityType: "contact", entityId: id },
-      orderBy: { createdAt: "desc" },
-    }),
-    db.task.findMany({
-      where: { tenantId, entityType: "contact", entityId: id },
-      orderBy: [{ status: "asc" }, { dueDate: "asc" }],
-    }),
-  ]);
+  const [timeline, customFields, tagsByEntity, attachments, tasks, accounts] =
+    await Promise.all([
+      getTimeline(tenantId, "contact", id),
+      getFieldValues(tenantId, "contact", id),
+      getTagsForEntities(tenantId, "contact", [id]),
+      db.attachment.findMany({
+        where: { tenantId, entityType: "contact", entityId: id },
+        orderBy: { createdAt: "desc" },
+      }),
+      db.task.findMany({
+        where: { tenantId, entityType: "contact", entityId: id },
+        orderBy: [{ status: "asc" }, { dueDate: "asc" }],
+      }),
+      db.account.findMany({
+        where: { tenantId },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      }),
+    ]);
   const tags = tagsByEntity[id] ?? [];
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             {contact.firstName} {contact.lastName ?? ""}
           </h1>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted-foreground">
             {[contact.email, contact.phone].filter(Boolean).join(" · ") ||
               "No contact details yet"}
           </p>
@@ -60,32 +66,26 @@ export default async function ContactDetailPage({
         {user!.role === "ADMIN" && <HardDeleteButton contactId={id} />}
       </div>
 
-      <Card>
+      <Card className="overflow-visible">
         <CardContent className="flex flex-col gap-3 pt-6">
           <div className="flex flex-wrap gap-4 text-sm">
-            {contact.account && (
-              <div>
-                <p className="text-xs text-zinc-500">Account</p>
-                <Link
-                  href={`/accounts/${contact.account.id}`}
-                  className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
-                >
-                  {contact.account.name}
-                </Link>
-              </div>
-            )}
+            <AccountLinker
+              contactId={id}
+              account={contact.account}
+              accounts={accounts}
+            />
             {contact.company && !contact.account && (
               <div>
-                <p className="text-xs text-zinc-500">Company</p>
-                <p className="font-medium text-zinc-900 dark:text-zinc-50">
+                <p className="text-xs text-muted-foreground">Company</p>
+                <p className="font-medium text-foreground">
                   {contact.company}
                 </p>
               </div>
             )}
             {Object.entries(customFields).map(([key, value]) => (
               <div key={key}>
-                <p className="text-xs text-zinc-500">{key}</p>
-                <p className="font-medium text-zinc-900 dark:text-zinc-50">
+                <p className="text-xs text-muted-foreground">{key}</p>
+                <p className="font-medium text-foreground">
                   {value}
                 </p>
               </div>

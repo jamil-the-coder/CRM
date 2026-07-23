@@ -54,7 +54,7 @@ export function TaskItem({ task }: { task: Task }) {
           className={`flex size-5 shrink-0 items-center justify-center rounded-full border text-xs ${
             task.status === "done"
               ? "border-emerald-600 bg-emerald-600 text-white"
-              : "border-zinc-300 dark:border-zinc-700"
+              : "border-input"
           }`}
         >
           {task.status === "done" ? "✓" : ""}
@@ -63,14 +63,14 @@ export function TaskItem({ task }: { task: Task }) {
           <p
             className={`text-sm font-medium ${
               task.status === "done"
-                ? "text-zinc-400 line-through dark:text-zinc-600"
-                : "text-zinc-900 dark:text-zinc-50"
+                ? "text-muted-foreground line-through dark:text-muted-foreground"
+                : "text-foreground"
             }`}
           >
             {task.title}
           </p>
           {linkPath && (
-            <a href={linkPath} className="text-xs text-zinc-500 hover:underline">
+            <a href={linkPath} className="text-xs text-muted-foreground hover:underline">
               View record
             </a>
           )}

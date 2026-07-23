@@ -50,7 +50,7 @@ export function AddNoteForm({
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={3}
-            className="w-full rounded-md border border-zinc-200 bg-transparent px-3 py-2 text-sm shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
+            className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm shadow-xs dark:bg-input/30"
           />
           <div className="flex justify-end">
             <Button type="submit" disabled={submitting}>
@@ -59,7 +59,7 @@ export function AddNoteForm({
           </div>
         </form>
         {error && (
-          <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
+          <p className="mt-2 text-sm text-destructive">{error}</p>
         )}
       </CardContent>
     </Card>

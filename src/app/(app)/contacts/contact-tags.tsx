@@ -61,15 +61,15 @@ export function ContactTags({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="rounded-full px-1.5 text-xs text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+        className="rounded-full px-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-muted"
         aria-label="Add tag"
       >
         +
       </button>
       {open && (
-        <div className="absolute top-full right-0 z-10 mt-1 w-40 rounded-md border border-zinc-200 bg-white py-1 shadow-md dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="absolute top-full right-0 z-10 mt-1 w-40 rounded-md border border-border bg-white py-1 shadow-md dark:bg-input/30">
           {available.length === 0 ? (
-            <p className="px-3 py-1.5 text-xs text-zinc-500">
+            <p className="px-3 py-1.5 text-xs text-muted-foreground">
               No more tags to add.
             </p>
           ) : (
@@ -78,7 +78,7 @@ export function ContactTags({
                 key={tag.id}
                 type="button"
                 onClick={() => assign(tag.id)}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-muted"
               >
                 <Badge className={tagColorClassName(tag.color)}>
                   {tag.name}

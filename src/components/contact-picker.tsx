@@ -4,69 +4,77 @@ import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type Account = { id: string; name: string };
+type Contact = { id: string; name: string };
+
+function splitName(fullName: string) {
+  const trimmed = fullName.trim();
+  const spaceIndex = trimmed.indexOf(" ");
+  if (spaceIndex === -1) return { firstName: trimmed, lastName: undefined };
+  return {
+    firstName: trimmed.slice(0, spaceIndex),
+    lastName: trimmed.slice(spaceIndex + 1),
+  };
+}
 
 /**
- * A lightweight searchable picker — no combobox/select primitive exists in
- * this project's component set yet, and pulling one in for a single field
- * was judged more than this needed. Filters a client-side list (accounts
- * fetched once by the parent) rather than hitting the API per keystroke,
- * since a tenant's account list is expected to stay small.
- *
- * Also supports creating a new account inline (when the typed name doesn't
- * match one that already exists) — the whole point of a lookup field is to
- * avoid a dead end where the record you need doesn't exist yet.
+ * Searchable contact lookup, same pattern as AccountPicker — filters a
+ * client-side list and supports creating a new contact inline when the
+ * typed name doesn't match one that already exists, so picking a contact
+ * for a new lead or opportunity never dead-ends on "that person isn't in
+ * the system yet."
  */
-export function AccountPicker({
-  accounts,
+export function ContactPicker({
+  contacts,
   value,
   onChange,
-  id = "accountId",
-  label = "Account",
+  id = "contactId",
+  label = "Contact",
 }: {
-  accounts: Account[];
+  contacts: Contact[];
   value: string;
-  onChange: (accountId: string) => void;
+  onChange: (contactId: string) => void;
   id?: string;
   label?: string;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const [extraAccounts, setExtraAccounts] = useState<Account[]>([]);
+  const [extraContacts, setExtraContacts] = useState<Contact[]>([]);
   const [creating, setCreating] = useState(false);
 
-  const allAccounts = useMemo(
-    () => [...accounts, ...extraAccounts],
-    [accounts, extraAccounts],
+  const allContacts = useMemo(
+    () => [...contacts, ...extraContacts],
+    [contacts, extraContacts],
   );
-  const selected = allAccounts.find((a) => a.id === value);
+  const selected = allContacts.find((c) => c.id === value);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return allAccounts.slice(0, 20);
-    return allAccounts
-      .filter((a) => a.name.toLowerCase().includes(q))
+    if (!q) return allContacts.slice(0, 20);
+    return allContacts
+      .filter((c) => c.name.toLowerCase().includes(q))
       .slice(0, 20);
-  }, [allAccounts, query]);
+  }, [allContacts, query]);
 
   const trimmedQuery = query.trim();
-  const hasExactMatch = allAccounts.some(
-    (a) => a.name.toLowerCase() === trimmedQuery.toLowerCase(),
+  const hasExactMatch = allContacts.some(
+    (c) => c.name.toLowerCase() === trimmedQuery.toLowerCase(),
   );
 
-  async function createAccount() {
+  async function createContact() {
     if (!trimmedQuery || creating) return;
     setCreating(true);
-    const response = await fetch("/api/accounts", {
+    const { firstName, lastName } = splitName(trimmedQuery);
+    const response = await fetch("/api/contacts", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: trimmedQuery }),
+      body: JSON.stringify({ firstName, lastName }),
     });
     setCreating(false);
     if (!response.ok) return;
     const body = await response.json();
-    setExtraAccounts((prev) => [...prev, { id: body.account.id, name: body.account.name }]);
-    onChange(body.account.id);
+    const name = `${body.contact.firstName} ${body.contact.lastName ?? ""}`.trim();
+    setExtraContacts((prev) => [...prev, { id: body.contact.id, name }]);
+    onChange(body.contact.id);
     setQuery("");
     setOpen(false);
   }
@@ -76,7 +84,7 @@ export function AccountPicker({
       <Label htmlFor={id}>{label}</Label>
       <Input
         id={id}
-        placeholder="Search accounts…"
+        placeholder="Search contacts…"
         value={open ? query : (selected?.name ?? "")}
         onFocus={() => {
           setOpen(true);
@@ -88,38 +96,24 @@ export function AccountPicker({
       />
       {open && (
         <div className="bg-popover absolute top-full z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-border py-1 shadow-md">
-          {value && (
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                onChange("");
-                setQuery("");
-                setOpen(false);
-              }}
-              className="w-full px-3 py-1.5 text-left text-sm text-muted-foreground hover:bg-muted"
-            >
-              No account
-            </button>
-          )}
           {filtered.length === 0 && !trimmedQuery ? (
             <p className="px-3 py-1.5 text-sm text-muted-foreground">
-              No matching accounts.
+              No matching contacts.
             </p>
           ) : (
-            filtered.map((account) => (
+            filtered.map((contact) => (
               <button
-                key={account.id}
+                key={contact.id}
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
-                  onChange(account.id);
+                  onChange(contact.id);
                   setQuery("");
                   setOpen(false);
                 }}
                 className="w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted"
               >
-                {account.name}
+                {contact.name}
               </button>
             ))
           )}
@@ -127,7 +121,7 @@ export function AccountPicker({
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={createAccount}
+              onClick={createContact}
               disabled={creating}
               className="text-primary hover:bg-muted w-full border-t border-border px-3 py-1.5 text-left text-sm font-medium disabled:opacity-50"
             >

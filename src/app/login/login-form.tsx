@@ -44,7 +44,7 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Log in</CardTitle>
         <CardDescription>
@@ -75,18 +75,16 @@ export function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-          )}
+          {error && <p className="text-destructive text-sm">{error}</p>}
           <Button type="submit" disabled={submitting} className="mt-2">
             {submitting ? "Logging in…" : "Log in"}
           </Button>
         </form>
-        <p className="mt-4 text-center text-sm text-zinc-500">
+        <p className="text-muted-foreground mt-4 text-center text-sm">
           Don&apos;t have an account?{" "}
           <Link
             href="/signup"
-            className="font-medium text-zinc-900 underline dark:text-zinc-100"
+            className="text-primary font-medium hover:underline"
           >
             Sign up
           </Link>

@@ -10,8 +10,8 @@ export function EmbedSnippet({
 
   return (
     <div className="flex flex-col gap-1">
-      <p className="text-xs font-medium text-zinc-500">Embed snippet</p>
-      <pre className="overflow-x-auto rounded-md bg-zinc-100 p-2 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+      <p className="text-xs font-medium text-muted-foreground">Embed snippet</p>
+      <pre className="overflow-x-auto rounded-md bg-muted p-2 text-xs text-foreground">
         {snippet}
       </pre>
     </div>

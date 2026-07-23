@@ -32,3 +32,21 @@ export function quoteStatusBadgeVariant(
   if (status === "declined") return "destructive";
   return "secondary";
 }
+
+/**
+ * Invoice status: "draft" is the only value that exists in practice today
+ * (no real accounting-tool sync yet, per Invoice's placeholder-record
+ * design), but the mapping is written for the full lifecycle now rather
+ * than left as a single-branch stub, since the design brief names invoice
+ * status explicitly as a concept needing the same reserved colors used
+ * everywhere else (paid=success, overdue/void=destructive, sent=info,
+ * draft=neutral).
+ */
+export function invoiceStatusBadgeVariant(
+  status: string,
+): "success" | "destructive" | "info" | "secondary" {
+  if (status === "paid") return "success";
+  if (status === "overdue" || status === "void") return "destructive";
+  if (status === "sent") return "info";
+  return "secondary";
+}

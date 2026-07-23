@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const selectClassName =
-  "h-9 rounded-md border border-zinc-200 bg-transparent px-3 text-sm shadow-xs dark:border-zinc-800 dark:bg-zinc-900";
+  "h-9 rounded-md border border-border bg-transparent px-3 text-sm shadow-xs dark:bg-input/30";
 
 type Opportunity = { id: string; name: string };
 type Product = { id: string; name: string; unitPrice: string };
@@ -83,7 +83,7 @@ export function NewQuoteForm({
   if (opportunities.length === 0) {
     return (
       <Card>
-        <CardContent className="py-6 text-center text-sm text-zinc-500">
+        <CardContent className="py-6 text-center text-sm text-muted-foreground">
           Create an opportunity first — quotes are tied to one.
         </CardContent>
       </Card>
@@ -191,7 +191,7 @@ export function NewQuoteForm({
           </div>
         </form>
         {error && (
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-sm text-destructive">{error}</p>
         )}
       </CardContent>
     </Card>

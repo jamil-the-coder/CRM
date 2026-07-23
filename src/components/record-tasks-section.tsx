@@ -51,7 +51,7 @@ export function RecordTasksSection({
   return (
     <Card>
       <CardContent className="flex flex-col gap-3 pt-6">
-        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <p className="text-sm font-medium text-foreground">
           Tasks
         </p>
         <form onSubmit={handleAdd} className="flex items-end gap-2">
@@ -67,9 +67,9 @@ export function RecordTasksSection({
           </Button>
         </form>
         {tasks.length === 0 ? (
-          <p className="text-sm text-zinc-500">No tasks linked yet.</p>
+          <p className="text-sm text-muted-foreground">No tasks linked yet.</p>
         ) : (
-          <div className="flex flex-col divide-y divide-zinc-200 dark:divide-zinc-800">
+          <div className="flex flex-col divide-y divide-border">
             {tasks.map((task) => {
               const isOverdue =
                 task.status === "open" &&
@@ -89,7 +89,7 @@ export function RecordTasksSection({
                     className={`flex size-5 shrink-0 items-center justify-center rounded-full border text-xs ${
                       task.status === "done"
                         ? "border-emerald-600 bg-emerald-600 text-white"
-                        : "border-zinc-300 dark:border-zinc-700"
+                        : "border-input"
                     }`}
                   >
                     {task.status === "done" ? "✓" : ""}
@@ -97,15 +97,15 @@ export function RecordTasksSection({
                   <span
                     className={
                       task.status === "done"
-                        ? "text-zinc-400 line-through dark:text-zinc-600"
-                        : "text-zinc-900 dark:text-zinc-50"
+                        ? "text-muted-foreground line-through dark:text-muted-foreground"
+                        : "text-foreground"
                     }
                   >
                     {task.title}
                   </span>
                   {task.dueDate && (
                     <span
-                      className={`ml-auto text-xs ${isOverdue ? "text-red-600 dark:text-red-400" : "text-zinc-500"}`}
+                      className={`ml-auto text-xs ${isOverdue ? "text-destructive" : "text-muted-foreground"}`}
                     >
                       {new Date(task.dueDate).toLocaleDateString()}
                     </span>
