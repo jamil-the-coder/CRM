@@ -21,6 +21,7 @@ const NAV_LINKS = [
   { href: "/custom-fields", label: "Custom Fields" },
   { href: "/tags", label: "Tags" },
   { href: "/team", label: "Team" },
+  { href: "/audit-log", label: "Audit Log" },
 ];
 
 export default async function AppLayout({

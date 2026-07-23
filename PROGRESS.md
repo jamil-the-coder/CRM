@@ -549,6 +549,18 @@ The gap analysis's most architecturally significant finding, closed: `Role` (`AD
 - Committed as `Phase 29: team management + role enforcement [verified]` and pushed to `origin/main`.
 - **Next:** Phase 30 — audit log viewer (the log itself has existed since Phase 17; just needs a page).
 
+### Phase 30 — Audit log viewer — **DONE**
+
+A small, focused phase — the `AuditLog` model and `recordAuditLog()` have existed since Phase 17 and are already wired into every sensitive action; this phase is just the missing viewer.
+
+- `GET /api/audit-log` (admin-only via `requireAdmin`), resolving each entry's `actorUserId` to an email via a batched lookup (no FK relation on `AuditLog` by design, per Phase 17 — entries survive user deletion, so a resolved-user lookup has to tolerate a since-deleted actor and fall back to "Unknown user").
+- An Audit Log page (admin-only, same "Only admins can..." pattern as the Team page for a non-admin visitor), listing the 200 most recent entries with a humanized action label, the actor's email (or "System" for entries with no actor, or "Unknown user" if the actor account no longer exists), IP address, and timestamp.
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 132/132 (added `audit-log.test.ts`: an admin gets entries back with the actor's email correctly resolved — including finding the very `auth.signup` entry the test tenant's own creation wrote — a non-admin rejected with 403, unauthenticated rejected with 401). `npm run build` — clean.
+- A real Playwright pass against the demo tenant confirmed the page renders real accumulated history correctly — every login from this session's own testing shows up, in order, with the right actor and timestamp, which is itself a good end-to-end proof that Phase 17's logging has been working correctly all along.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 30: audit log viewer [verified]` and pushed to `origin/main`.
+- **Next:** Phase 31 — CSV export.
+
 ---
 
 ## STUCK
