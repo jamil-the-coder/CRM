@@ -51,13 +51,15 @@ model Tenant {
 }
 
 model Account {
-  id        String   @id @default(cuid())
-  tenantId  String   @map("tenant_id")
-  name      String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(cuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  ownerUserId String?  @map("owner_user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  owner         User?         @relation("AccountOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
   contacts      Contact[]
   opportunities Opportunity[]
 
@@ -79,6 +81,8 @@ model User {
   sessions           Session[]
   ownedLeads         Lead[]        @relation("LeadOwner")
   ownedOpportunities Opportunity[] @relation("OpportunityOwner")
+  ownedContacts      Contact[]     @relation("ContactOwner")
+  ownedAccounts      Account[]     @relation("AccountOwner")
   notes              Note[]
   tasks              Task[]
 
@@ -98,19 +102,21 @@ model Session {
 }
 
 model Contact {
-  id        String   @id @default(cuid())
-  tenantId  String   @map("tenant_id")
-  accountId String?  @map("account_id")
-  firstName String   @map("first_name")
-  lastName  String?  @map("last_name")
-  email     String?
-  phone     String?
-  company   String?
-  dedupeKey String?  @map("dedupe_key")
-  createdAt DateTime @default(now()) @map("created_at")
+  id          String   @id @default(cuid())
+  tenantId    String   @map("tenant_id")
+  accountId   String?  @map("account_id")
+  ownerUserId String?  @map("owner_user_id")
+  firstName   String   @map("first_name")
+  lastName    String?  @map("last_name")
+  email       String?
+  phone       String?
+  company     String?
+  dedupeKey   String?  @map("dedupe_key")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   account       Account?      @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  owner         User?         @relation("ContactOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
   leads         Lead[]
   opportunities Opportunity[]
   emailLogs     EmailLog[]

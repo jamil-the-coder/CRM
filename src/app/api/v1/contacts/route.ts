@@ -13,6 +13,7 @@ const createContactSchema = z.object({
   phone: z.string().trim().max(50).optional(),
   company: z.string().trim().max(200).optional(),
   accountId: z.string().min(1).optional(),
+  ownerUserId: z.string().min(1).optional(),
   customFields: z.record(z.string(), z.string()).optional(),
 });
 
@@ -60,6 +61,17 @@ export async function POST(request: NextRequest) {
     if (!account) {
       return NextResponse.json(
         { error: "accountId does not belong to this tenant" },
+        { status: 400 },
+      );
+    }
+  }
+  if (parsed.data.ownerUserId) {
+    const owner = await db.user.findFirst({
+      where: { id: parsed.data.ownerUserId, tenantId },
+    });
+    if (!owner) {
+      return NextResponse.json(
+        { error: "ownerUserId does not belong to this tenant" },
         { status: 400 },
       );
     }

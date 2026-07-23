@@ -3,15 +3,21 @@ import { db } from "@/lib/db";
 import { ensurePipelineStages } from "@/lib/pipeline-stages";
 import { Card, CardContent } from "@/components/ui/card";
 import { KanbanBoard } from "./kanban-board";
+import { MineToggle } from "@/components/mine-toggle";
 
-export default async function OpportunitiesPage() {
+export default async function OpportunitiesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mine?: string }>;
+}) {
+  const { mine } = await searchParams;
   const user = await getCurrentUser();
   const tenantId = user!.tenantId;
 
   const [stages, opportunities] = await Promise.all([
     ensurePipelineStages(tenantId),
     db.opportunity.findMany({
-      where: { tenantId },
+      where: { tenantId, ...(mine === "1" ? { ownerUserId: user!.id } : {}) },
       orderBy: { createdAt: "desc" },
       include: { contact: true },
     }),
@@ -19,13 +25,16 @@ export default async function OpportunitiesPage() {
 
   return (
     <div className="flex h-full flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-          Opportunities
-        </h1>
-        <p className="text-sm text-zinc-500">
-          Drag a card to move it through your pipeline.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+            Opportunities
+          </h1>
+          <p className="text-sm text-zinc-500">
+            Drag a card to move it through your pipeline.
+          </p>
+        </div>
+        <MineToggle />
       </div>
 
       {opportunities.length === 0 ? (

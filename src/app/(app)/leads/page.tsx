@@ -3,24 +3,36 @@ import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { MineToggle } from "@/components/mine-toggle";
 
-export default async function LeadsPage() {
+export default async function LeadsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mine?: string }>;
+}) {
+  const { mine } = await searchParams;
   const user = await getCurrentUser();
   const leads = await db.lead.findMany({
-    where: { tenantId: user!.tenantId },
+    where: {
+      tenantId: user!.tenantId,
+      ...(mine === "1" ? { ownerUserId: user!.id } : {}),
+    },
     orderBy: { createdAt: "desc" },
     include: { contact: true },
   });
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-          Leads
-        </h1>
-        <p className="text-sm text-zinc-500">
-          Contacts working their way toward becoming an opportunity.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+            Leads
+          </h1>
+          <p className="text-sm text-zinc-500">
+            Contacts working their way toward becoming an opportunity.
+          </p>
+        </div>
+        <MineToggle />
       </div>
 
       {leads.length === 0 ? (

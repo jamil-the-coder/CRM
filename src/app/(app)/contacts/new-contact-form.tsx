@@ -12,11 +12,16 @@ import {
   type CustomFieldDefinition,
 } from "@/components/custom-fields-inputs";
 
+const selectClassName =
+  "h-9 rounded-md border border-zinc-200 bg-transparent px-3 text-sm shadow-xs dark:border-zinc-800 dark:bg-zinc-900";
+
 export function NewContactForm({
   accounts,
+  users,
   customFieldDefinitions,
 }: {
   accounts: { id: string; name: string }[];
+  users: { id: string; email: string }[];
   customFieldDefinitions: CustomFieldDefinition[];
 }) {
   const router = useRouter();
@@ -24,6 +29,7 @@ export function NewContactForm({
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
   const [accountId, setAccountId] = useState("");
+  const [ownerUserId, setOwnerUserId] = useState("");
   const [customFields, setCustomFields] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -41,6 +47,7 @@ export function NewContactForm({
         email: email || undefined,
         company: company || undefined,
         accountId: accountId || undefined,
+        ownerUserId: ownerUserId || undefined,
         customFields:
           Object.keys(customFields).length > 0 ? customFields : undefined,
       }),
@@ -57,6 +64,7 @@ export function NewContactForm({
     setEmail("");
     setCompany("");
     setAccountId("");
+    setOwnerUserId("");
     setCustomFields({});
     setSubmitting(false);
     router.refresh();
@@ -101,6 +109,22 @@ export function NewContactForm({
               value={accountId}
               onChange={setAccountId}
             />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="ownerUserId">Owner</Label>
+            <select
+              id="ownerUserId"
+              className={selectClassName}
+              value={ownerUserId}
+              onChange={(e) => setOwnerUserId(e.target.value)}
+            >
+              <option value="">Unassigned</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.email}
+                </option>
+              ))}
+            </select>
           </div>
           <CustomFieldsInputs
             definitions={customFieldDefinitions}

@@ -7,20 +7,21 @@ import { NewContactForm } from "./new-contact-form";
 import { TagFilter } from "./tag-filter";
 import { ContactTags } from "./contact-tags";
 import { getTagsForEntities, getEntityIdsForTag } from "@/lib/tags";
+import { MineToggle } from "@/components/mine-toggle";
 
 export default async function ContactsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tagId?: string }>;
+  searchParams: Promise<{ tagId?: string; mine?: string }>;
 }) {
-  const { tagId } = await searchParams;
+  const { tagId, mine } = await searchParams;
   const user = await getCurrentUser();
   const tenantId = user!.tenantId;
 
-  const [allContacts, accounts, customFieldDefinitions, allTags] =
+  const [allContacts, accounts, users, customFieldDefinitions, allTags] =
     await Promise.all([
       db.contact.findMany({
-        where: { tenantId },
+        where: { tenantId, ...(mine === "1" ? { ownerUserId: user!.id } : {}) },
         orderBy: { createdAt: "desc" },
         include: { account: true },
       }),
@@ -28,6 +29,11 @@ export default async function ContactsPage({
         where: { tenantId },
         orderBy: { name: "asc" },
         select: { id: true, name: true },
+      }),
+      db.user.findMany({
+        where: { tenantId },
+        orderBy: { email: "asc" },
+        select: { id: true, email: true },
       }),
       db.customFieldDefinition.findMany({
         where: { tenantId, entityType: "contact" },
@@ -60,11 +66,15 @@ export default async function ContactsPage({
             People and companies you&apos;re in touch with.
           </p>
         </div>
-        <TagFilter tags={allTags} />
+        <div className="flex items-center gap-2">
+          <MineToggle />
+          <TagFilter tags={allTags} />
+        </div>
       </div>
 
       <NewContactForm
         accounts={accounts}
+        users={users}
         customFieldDefinitions={customFieldDefinitions}
       />
 

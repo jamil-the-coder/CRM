@@ -478,6 +478,23 @@ The gap analysis's single biggest finding, closed: Contact, Lead, and Opportunit
 - Committed as `Phase 24: tasks/to-dos [verified]` and pushed to `origin/main`.
 - **Next:** Phase 25 — record ownership completion (`ownerId` on Contact/Account, an owner picker, "my records" filters).
 
+### Phase 25 — Record ownership completion — **DONE**
+
+Closes the gap-analysis finding: `Lead.ownerUserId`/`Opportunity.ownerUserId` existed since Phase 4 and were already accepted by their APIs, but had no picker UI and no "my records" filter anywhere; `Contact`/`Account` had no owner column at all.
+
+- Added `ownerUserId` to `Contact` and `Account` (`SetNull` on user deletion, same as every other owner-style FK in this schema).
+- Wired `ownerUserId` into Contact's session **and** v1 create/update routes (4 files) with the same cross-tenant validation pattern as `accountId`; wired it into Account's session create/update routes (v1 Account ownerUserId support deliberately deferred — see decisions).
+- Added a `?mine=1` filter to all four list GET routes (Contact, Account, Lead, Opportunity — the latter two already had the column, just needed the query param).
+- **UI:** an owner `<select>` added to the Contact creation form (the flagship form, same scoping precedent as the Account picker and custom fields), and a single reusable `<MineToggle>` component wired onto all four list pages (Contacts, Accounts, Leads, Opportunities) — a toggle button that adds/removes `?mine=1` from the URL, preserving any other active filters (fixed `TagFilter` to merge into the existing query params instead of overwriting them, so "My records" + "tag filter" can be active together on Contacts).
+- **Verified (all passing):** `npx tsc --noEmit`, `npm run lint`, `npm run test` — 116/116 (added `ownership.test.ts`: Contact ownerUserId set on create/cleared on update, `?mine=1` filtering on both Contact and Account, cross-tenant ownerUserId rejected). `npm run build` — clean.
+- A real Playwright pass: created a contact with an explicit owner via the new picker, toggled "My records" on the Contacts page, and confirmed the list correctly narrowed to just that one contact.
+- **DECISIONS:**
+  - No owner-picker UI on the Account creation form yet (only Contact) — bounding scope the same way Custom Fields/Account-picker did in earlier phases; the API and `?mine=1` filter fully support it already, so adding the picker there later is a UI-only change.
+  - Did not extend `ownerUserId` support to the v1 (n8n-facing) Account API — n8n's typical use case (creating records from external triggers) doesn't need to assign a human owner at creation time the way the CRM UI does; can add if a real workflow needs it.
+- **NEEDS FROM OPERATOR:** none blocking.
+- Committed as `Phase 25: record ownership completion [verified]` and pushed to `origin/main`.
+- **Next:** Phase 26 — products & price list.
+
 ---
 
 ## STUCK

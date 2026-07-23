@@ -21,8 +21,14 @@ export function TagFilter({
       className={selectClassName}
       value={currentTagId}
       onChange={(e) => {
-        const value = e.target.value;
-        router.push(value ? `/contacts?tagId=${value}` : "/contacts");
+        const params = new URLSearchParams(searchParams);
+        if (e.target.value) {
+          params.set("tagId", e.target.value);
+        } else {
+          params.delete("tagId");
+        }
+        const query = params.toString();
+        router.push(query ? `/contacts?${query}` : "/contacts");
       }}
       aria-label="Filter by tag"
     >

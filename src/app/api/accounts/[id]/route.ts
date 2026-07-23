@@ -7,6 +7,7 @@ import { getFieldValues, setFieldValues } from "@/lib/custom-fields";
 
 const updateAccountSchema = z.object({
   name: z.string().trim().min(1).max(200).optional(),
+  ownerUserId: z.string().min(1).nullable().optional(),
   customFields: z.record(z.string(), z.string().nullable()).optional(),
 });
 
@@ -50,6 +51,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   });
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (parsed.data.ownerUserId) {
+    const owner = await db.user.findFirst({
+      where: { id: parsed.data.ownerUserId, tenantId: auth.user.tenantId },
+    });
+    if (!owner) {
+      return NextResponse.json(
+        { error: "ownerUserId does not belong to this tenant" },
+        { status: 400 },
+      );
+    }
   }
 
   const { customFields, ...accountFields } = parsed.data;

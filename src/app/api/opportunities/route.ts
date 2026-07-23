@@ -24,8 +24,14 @@ export async function GET(request: NextRequest) {
   const auth = await requireSession(request);
   if (auth.unauthorized) return auth.unauthorized;
 
+  const { searchParams } = new URL(request.url);
+  const mine = searchParams.get("mine") === "1";
+
   const opportunities = await db.opportunity.findMany({
-    where: { tenantId: auth.user.tenantId },
+    where: {
+      tenantId: auth.user.tenantId,
+      ...(mine ? { ownerUserId: auth.user.id } : {}),
+    },
     orderBy: { createdAt: "desc" },
     take: 100,
     include: { contact: true },
